@@ -2,7 +2,7 @@ import { Exome, getExomeId } from 'exome';
 
 import { RestaurantStore } from './restaurant.store';
 
-export class ChefStore extends Exome {
+export class WaiterStore extends Exome {
   public restaurant: RestaurantStore | null = null;
 
   public foodIntervalHolder: Record<string, any> = {};
@@ -42,10 +42,10 @@ export class ChefStore extends Exome {
         return;
       }
 
-      if (restaurant.foodQueue.length > 0) {
-        const food = restaurant.foodQueue.shift()!;
+      if (restaurant.serveQueue.length > 0) {
+        const food = restaurant.serveQueue.shift()!;
 
-        this.cook(food);
+        this.wait(food);
       }
     }, 1000);
 
@@ -60,48 +60,28 @@ export class ChefStore extends Exome {
     }
   }
 
-  private async cook(food: () => (price: number) => void) {
+  public async wait(serve: (price: number) => void) {
     this.isBusy = true;
 
-    this.restaurant?.addLog(`👨🏻‍🍳 "${this.name}" is cooking for ${this.speed / 1000}s`);
+    this.restaurant?.addLog(`🧍 "${this.name}" is serving for ${this.speed / 1000}s`);
     this.restaurant?.forceReload();
-
-    const serve = food();
 
     await new Promise((resolve) => setTimeout(resolve, this.speed));
 
-    this.restaurant?.serveQueue.push(serve);
+    serve(100);
 
     this.isBusy = false;
   }
 }
 
-const chefRodrigoSanchez = new ChefStore(
-  'Rodrigo Sánchez',
+const chefSpeedyGonzales = new WaiterStore(
+  'Speedy Gonzales',
   3000,
   500,
   2000,
   30000,
 );
 
-const chefFernandoGusto = new ChefStore(
-  'Fernando Gusto',
-  2000,
-  1000,
-  2000,
-  55000,
-);
-
-const chefJohnWick = new ChefStore(
-  'John Wick',
-  1000,
-  2000,
-  5000,
-  30000,
-);
-
-export const allChefs = [
-  chefRodrigoSanchez,
-  chefFernandoGusto,
-  chefJohnWick,
+export const allWaiters = [
+  chefSpeedyGonzales,
 ];

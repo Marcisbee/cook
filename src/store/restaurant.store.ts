@@ -3,6 +3,7 @@ import { Exome } from 'exome';
 import { ChefStore } from './chef.store';
 import { ClientStore } from './client.store';
 import { SeatStore } from './seat.store';
+import { WaiterStore } from './waiter.store';
 
 export class RestaurantStore extends Exome {
   public money = 0;
@@ -16,6 +17,9 @@ export class RestaurantStore extends Exome {
   public chefs: ChefStore[] = [];
   public foodQueue: (() => (price: number) => void)[] = [];
 
+  public waiters: WaiterStore[] = [];
+  public serveQueue: ((price: number) => void)[] = [];
+
   public clients: any[] = [];
 
   constructor(
@@ -25,6 +29,7 @@ export class RestaurantStore extends Exome {
     super();
 
     this.hireChef(new ChefStore(owner, 2000));
+    this.hireWaiter(new WaiterStore('Jane', 2000));
 
     const clientsComingIn = () => {
       setTimeout(() => {
@@ -61,6 +66,20 @@ export class RestaurantStore extends Exome {
     chef.fire(this);
 
     this.chefs.splice(this.chefs.indexOf(chef), 1);
+  }
+
+  public hireWaiter(waiter: WaiterStore) {
+    waiter.hire(this);
+
+    this.waiters.push(waiter);
+  }
+
+  public fireWaiter(
+    waiter: WaiterStore,
+  ) {
+    waiter.fire(this);
+
+    this.waiters.splice(this.waiters.indexOf(waiter), 1);
   }
 
   public getSeatsPrice = (size: number) => {

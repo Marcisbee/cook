@@ -5,6 +5,7 @@ import React from 'react';
 import { allChefs } from '../store/chef.store';
 import { SeatStore } from '../store/seat.store';
 import { store } from '../store/store';
+import { allWaiters } from '../store/waiter.store';
 
 function formatMoney(amountInCents: number) {
   return `€${(amountInCents / 100).toFixed(2)}`;
@@ -29,7 +30,6 @@ function Seat({ seat }: { seat: SeatStore }) {
   );
 }
 
-
 export function Restaurant() {
   const [active, setActive] = React.useState(0);
   const { restaurants, totalMoney } = useStore(store.game!);
@@ -44,6 +44,10 @@ export function Restaurant() {
     chefs,
     hireChef,
     fireChef,
+
+    waiters,
+    hireWaiter,
+    fireWaiter,
 
     log
   } = useStore(restaurants[active]);
@@ -131,6 +135,45 @@ export function Restaurant() {
                 disabled={chef.costInitial > money}
               >
                 Hire ({formatMoney(chef.costInitial)})
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <br />
+        <br />
+        <hr />
+
+        Your waiters:
+        <ul>
+          {waiters.map((waiter, index) => (
+            <li key={index}>
+              🧍 Waiter "{waiter.name}" ({waiter.speed / 1000}s per food)
+              {` `}
+              {index !== 0 && (
+                <button onClick={() => fireWaiter(waiter)}>
+                  Fire
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        Hire waiters:
+        <ul>
+          {allWaiters.filter((waiter) => waiters.indexOf(waiter) === -1).map((waiter, index) => (
+            <li key={index}>
+              🧍 Waiter "{waiter.name}"
+              ({waiter.speed / 1000}s per food)
+              (salary {formatMoney(waiter.costAmount)} / {waiter.costInterval / 1000}s)
+              {` `}
+              <button
+                onClick={() => {
+                  hireWaiter(waiter);
+                }}
+                disabled={waiter.costInitial > money}
+              >
+                Hire ({formatMoney(waiter.costInitial)})
               </button>
             </li>
           ))}

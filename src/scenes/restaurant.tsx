@@ -1,8 +1,9 @@
 import { getExomeId } from 'exome';
 import { useStore } from 'exome/react';
 import React from 'react';
+
 import { allChefs } from '../store/chef.store';
-import { SeatStore } from '../store/restaurant.store';
+import { SeatStore } from '../store/seat.store';
 import { store } from '../store/store';
 
 function formatMoney(amountInCents: number) {
@@ -10,18 +11,19 @@ function formatMoney(amountInCents: number) {
 }
 
 function Seat({ seat }: { seat: SeatStore }) {
-  const { client, cooking } = useStore(seat);
+  const { client, status } = useStore(seat);
 
   return (
     <div>
-      {!client && <span>Seat is empty</span>}
+      {!client && <span>🪑 Seat is empty</span>}
 
       {client && (
-        cooking ? (
-          <span>Cooking</span>
-        ) : (
-          <span>Client is waiting</span>
-        )
+        <div>
+          {status === 'walking' && <span>🚶 {status}</span>}
+          {status === 'waiting' && <span>🧍 {status}</span>}
+          {status === 'cooking' && <span>👨🏻‍🍳 {status}</span>}
+          {status === 'eating' && <span>🍜 {status}</span>}
+        </div>
       )}
     </div>
   );

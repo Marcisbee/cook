@@ -1,34 +1,8 @@
-import { Exome, onAction } from 'exome';
+import { Exome } from 'exome';
 
 import { ChefStore } from './chef.store';
-
-class ClientStore extends Exome {}
-
-export class SeatStore extends Exome {
-  public client: ClientStore | null = null;
-  public cooking = false;
-
-  constructor(public restaurant: RestaurantStore) {
-    super();
-  }
-
-  public async seatClient(client: ClientStore) {
-    this.restaurant.addLog(`🪑 Client was seated`);
-
-    this.client = client;
-
-    const receipt = await this.restaurant.orderFood();
-
-    this.restaurant.income(receipt);
-    this.client = null;
-    this.restaurant.addLog(`🍜 Client left with full belly`);
-  }
-
-  // public seatEmptied() {
-  //   this.client = null;
-  //   this.restaurant.
-  // }
-}
+import { ClientStore } from './client.store';
+import { SeatStore } from './seat.store';
 
 export class RestaurantStore extends Exome {
   public money = 0;
@@ -40,7 +14,7 @@ export class RestaurantStore extends Exome {
   public log: string[] = [];
 
   public chefs: ChefStore[] = [];
-  public foodQueue: ((price: number) => void)[] = [];
+  public foodQueue: (() => (price: number) => void)[] = [];
 
   public clients: any[] = [];
 
@@ -127,9 +101,21 @@ export class RestaurantStore extends Exome {
     return true;
   }
 
-  public async orderFood() {
-    return await new Promise<number>((resolve) => {
-      this.foodQueue.push(resolve);
+  public async orderFood(): Promise<() => Promise<number>> {
+    return await new Promise((cooking) => {
+      const fn: () => (price: number) => void = () => {
+        let finalResolve: (price: number) => void;
+
+        const finishOrder = new Promise<number>((resolve) => {
+          finalResolve = resolve;
+        });
+
+        cooking(() => finishOrder);
+
+        return finalResolve!;
+      }
+
+      this.foodQueue.push(fn);
     });
   }
 

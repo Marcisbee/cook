@@ -60,15 +60,17 @@ export class ChefStore extends Exome {
     }
   }
 
-  public async cook(food: (price: number) => void) {
+  private async cook(food: () => (price: number) => void) {
     this.isBusy = true;
 
     this.restaurant?.addLog(`👨🏻‍🍳 "${this.name}" is cooking for ${this.speed / 1000}s`);
     this.restaurant?.forceReload();
 
+    const serve = food();
+
     await new Promise((resolve) => setTimeout(resolve, this.speed));
 
-    food(100);
+    serve(100);
 
     console.log('finished cooking')
     this.isBusy = false;

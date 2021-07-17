@@ -3,13 +3,16 @@ import { Exome, getExomeId } from 'exome';
 import { RestaurantStore } from './restaurant.store';
 
 export class ChefStore extends Exome {
-  public incomeIntervalHolder: Record<string, any> = {};
+  public restaurant: RestaurantStore | null = null;
+
+  public foodIntervalHolder: Record<string, any> = {};
   public costIntervalHolder: Record<string, any> = {};
+
+  private isBusy = false;
 
   constructor(
     public name: string,
-    public incomeAmount: number,
-    public incomeInterval: number,
+    public speed: number,
     public costInitial: number = 0,
     public costAmount: number = 0,
     public costInterval: number = 0,
@@ -20,19 +23,31 @@ export class ChefStore extends Exome {
   public fire(restaurant: RestaurantStore) {
     const id = getExomeId(restaurant);
 
-    clearInterval(this.incomeIntervalHolder[id]);
+    this.restaurant = null;
+
+    clearInterval(this.foodIntervalHolder[id]);
     clearInterval(this.costIntervalHolder[id]);
   }
 
   public hire(restaurant: RestaurantStore) {
     const id = getExomeId(restaurant);
 
-    clearInterval(this.incomeIntervalHolder[id]);
+    this.restaurant = restaurant;
+
+    clearInterval(this.foodIntervalHolder[id]);
     clearInterval(this.costIntervalHolder[id]);
 
-    this.incomeIntervalHolder[id] = setInterval(() => {
-      restaurant.income(this.incomeAmount);
-    }, this.incomeInterval);
+    this.foodIntervalHolder[id] = setInterval(() => {
+      if (this.isBusy) {
+        return;
+      }
+
+      if (restaurant.foodQueue.length > 0) {
+        const food = restaurant.foodQueue.shift()!;
+
+        this.cook(food);
+      }
+    }, 1000);
 
     if (this.costAmount) {
       this.costIntervalHolder[id] = setInterval(() => {
@@ -44,12 +59,25 @@ export class ChefStore extends Exome {
       restaurant.cost(this.costInitial);
     }
   }
+
+  public async cook(food: (price: number) => void) {
+    this.isBusy = true;
+
+    this.restaurant?.addLog(`👨🏻‍🍳 "${this.name}" is cooking for ${this.speed / 1000}s`);
+    this.restaurant?.forceReload();
+
+    await new Promise((resolve) => setTimeout(resolve, this.speed));
+
+    food(100);
+
+    console.log('finished cooking')
+    this.isBusy = false;
+  }
 }
 
 const chefRodrigoSanchez = new ChefStore(
   'Rodrigo Sánchez',
-  50,
-  1000,
+  3000,
   500,
   2000,
   30000,
@@ -57,16 +85,14 @@ const chefRodrigoSanchez = new ChefStore(
 
 const chefFernandoGusto = new ChefStore(
   'Fernando Gusto',
-  50,
+  2000,
   1000,
-  500,
   2000,
   55000,
 );
 
 const chefJohnWick = new ChefStore(
   'John Wick',
-  200,
   1000,
   2000,
   5000,

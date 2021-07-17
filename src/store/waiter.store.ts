@@ -1,6 +1,7 @@
 import { Exome, getExomeId } from 'exome';
 
 import { RestaurantStore } from './restaurant.store';
+import { SeatStore } from './seat.store';
 
 export class WaiterStore extends Exome {
   public restaurant: RestaurantStore | null = null;
@@ -23,7 +24,7 @@ export class WaiterStore extends Exome {
   public fire(restaurant: RestaurantStore) {
     const id = getExomeId(restaurant);
 
-    this.restaurant = null;
+    // this.restaurant = null;
 
     clearInterval(this.foodIntervalHolder[id]);
     clearInterval(this.costIntervalHolder[id]);
@@ -43,9 +44,9 @@ export class WaiterStore extends Exome {
       }
 
       if (restaurant.serveQueue.length > 0) {
-        const food = restaurant.serveQueue.shift()!;
+        const seat = restaurant.serveQueue.shift()!;
 
-        this.wait(food);
+        this.serve(seat);
       }
     }, 1000);
 
@@ -60,15 +61,13 @@ export class WaiterStore extends Exome {
     }
   }
 
-  public async wait(serve: (price: number) => void) {
+  public async serve(seat: SeatStore) {
     this.isBusy = true;
 
     this.restaurant?.addLog(`🧍 "${this.name}" is serving for ${this.speed / 1000}s`);
     this.restaurant?.forceReload();
 
-    await new Promise((resolve) => setTimeout(resolve, this.speed));
-
-    serve(100);
+    await seat.serve(new Promise((resolve) => setTimeout(resolve, this.speed)));
 
     this.isBusy = false;
   }

@@ -21,9 +21,11 @@ function Seat({ seat }: { seat: SeatStore }) {
       {client && (
         <div>
           {status === 'walking' && <span>🚶 {status}</span>}
-          {status === 'waiting' && <span>🧍 {status}</span>}
+          {status === 'ordered' && <span>🔖 {status}</span>}
           {status === 'cooking' && <span>👨🏻‍🍳 {status}</span>}
-          {status === 'eating' && <span>🍜 {status}</span>}
+          {status === 'waiting' && <span>⏳ {status}</span>}
+          {status === 'serving' && <span>🍴 {status}</span>}
+          {status === 'eating' && <span>🍖 {status}</span>}
         </div>
       )}
     </div>

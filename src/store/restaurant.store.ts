@@ -15,10 +15,10 @@ export class RestaurantStore extends Exome {
   public log: string[] = [];
 
   public chefs: ChefStore[] = [];
-  public foodQueue: (() => (price: number) => void)[] = [];
+  public cookQueue: SeatStore[] = [];
 
   public waiters: WaiterStore[] = [];
-  public serveQueue: ((price: number) => void)[] = [];
+  public serveQueue: SeatStore[] = [];
 
   public clients: any[] = [];
 
@@ -120,22 +120,23 @@ export class RestaurantStore extends Exome {
     return true;
   }
 
-  public async orderFood(): Promise<() => Promise<number>> {
-    return await new Promise((cooking) => {
-      const fn: () => (price: number) => void = () => {
-        let finalResolve: (price: number) => void;
+  public orderFood(seat: SeatStore) {
+    this.cookQueue.push(seat);
+    // return await new Promise((cooking) => {
+    //   const fn: () => (price: number) => void = () => {
+    //     let finalResolve: (price: number) => void;
 
-        const finishOrder = new Promise<number>((resolve) => {
-          finalResolve = resolve;
-        });
+    //     const finishOrder = new Promise<number>((resolve) => {
+    //       finalResolve = resolve;
+    //     });
 
-        cooking(() => finishOrder);
+    //     cooking(() => finishOrder);
 
-        return finalResolve!;
-      }
+    //     return finalResolve!;
+    //   }
 
-      this.foodQueue.push(fn);
-    });
+    //   this.cookQueue.push(fn);
+    // });
   }
 
   public addLog = (message: string) => {

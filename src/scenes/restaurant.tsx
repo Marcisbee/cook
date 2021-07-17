@@ -10,7 +10,14 @@ function formatMoney(amountInCents: number) {
 export function Restaurant() {
   const [active, setActive] = React.useState(0);
   const { restaurants, totalMoney } = useStore(store.game!);
-  const { money, chefs, hireChef, fireChef, log } = useStore(restaurants[active]);
+  const {
+    name,
+    money,
+    chefs,
+    hireChef,
+    fireChef,
+    log
+  } = useStore(restaurants[active]);
 
   return (
     <div>
@@ -18,7 +25,7 @@ export function Restaurant() {
       <ul>
         {restaurants.map((restaurant, index) => (
           <li key={index}>
-            <button onClick={() => setActive(index)}>{`${index + 1}. Restaurant`} {formatMoney(restaurant.money)}</button>
+            <button onClick={() => setActive(index)}>Restaurant "{restaurant.name}" {formatMoney(restaurant.money)}</button>
           </li>
         ))}
       </ul>
@@ -29,7 +36,7 @@ export function Restaurant() {
 
       <hr />
 
-      <h1>{`${active + 1}. Restaurant`} {formatMoney(money)}</h1>
+      <h1>Restaurant "{name}" {formatMoney(money)}</h1>
 
       Your chefs:
       <ul>

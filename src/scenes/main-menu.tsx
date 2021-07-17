@@ -9,9 +9,38 @@ export function MainMenu() {
     <div>
       <h1>👨🏻‍🍳 Cooker game</h1>
 
-      <button onClick={startGame}>
-        Play
-      </button>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+
+          const restaurant = (e.target as any).restaurant.value;
+          const owner = (e.target as any).owner.value;
+
+          startGame(restaurant, owner);
+        }}
+      >
+        <label>
+          <strong>Restaurant name:</strong>
+          <br />
+          <input type="text" name="restaurant" defaultValue="Black Oasis" />
+        </label>
+
+        <br />
+        <br />
+
+        <label>
+          <strong>Owner name:</strong>
+          <br />
+          <input type="text" name="owner" defaultValue="John Cook" />
+        </label>
+
+        <br />
+        <br />
+
+        <button type="submit">
+          Play
+        </button>
+      </form>
     </div>
   );
 }

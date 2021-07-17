@@ -21,8 +21,8 @@ class Store extends Exome {
     this.scene = scene;
   }
 
-  public startGame() {
-    this.game = new GameStore();
+  public startGame(name: string, owner: string) {
+    this.game = new GameStore(name, owner);
     this.scene = 'Restaurant';
   }
 }

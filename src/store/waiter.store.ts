@@ -11,6 +11,7 @@ export class WaiterStore extends Exome {
 
   public isBusy = false;
   public serving: SeatStore | null = null;
+  public served: SeatStore | null = null;
 
   constructor(
     public name: string,
@@ -55,7 +56,12 @@ export class WaiterStore extends Exome {
 
     if (this.costAmount) {
       this.costIntervalHolder[id] = setInterval(() => {
-        restaurant.cost(this.costAmount);
+        const paid = restaurant.cost(this.costAmount);
+
+        if (!paid) {
+          this.restaurant?.addLog(`Chef ${this.name} left, because salary can't be paid.`);
+          this.restaurant?.fireWaiter(this);
+        }
       }, this.costInterval);
     }
 
@@ -73,13 +79,22 @@ export class WaiterStore extends Exome {
     await seat.serve(new Promise((resolve) => setTimeout(resolve, this.speed)));
 
     this.serving = null;
+    this.served = seat;
+
+    this.returnFromTable();
+  }
+
+  private async returnFromTable() {
+    await new Promise((resolve) => setTimeout(resolve, this.speed));
+
     this.isBusy = false;
+    this.served = null;
   }
 }
 
 const chefSpeedyGonzales = new WaiterStore(
   'Speedy Gonzales',
-  500,
+  1000,
   500,
   500,
   50000,

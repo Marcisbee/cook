@@ -3,9 +3,11 @@ import { useStore } from 'exome/react';
 import React from 'react';
 
 import { ChefStore } from '../../store/chef.store';
+import { ReceptionStore } from '../../store/reception.store';
 import { SeatStore } from '../../store/seat.store';
 import { WaiterStore } from '../../store/waiter.store';
 import { useTransition } from '../../utils/use-transition';
+import { Client } from '../client/client';
 import { GameObject } from '../game-object/game-object';
 import { TileType } from '../scene/scene';
 
@@ -51,6 +53,24 @@ export function Tile({ type }: TileProps) {
       <button
         className={styles.tile}
         style={{ backgroundColor: '#ccc' }}
+      />
+    )
+  }
+
+  if (type === 'reception') {
+    return (
+      <button
+        className={styles.tile}
+        style={{ backgroundColor: '#ccc' }}
+      />
+    )
+  }
+
+  if (type === 'leftDoor') {
+    return (
+      <button
+        id="leftDoor"
+        className={styles.tile}
       />
     )
   }
@@ -119,17 +139,61 @@ export function TileChef({ chef }: { chef: ChefStore }) {
   );
 }
 
+export function TileReception({ reception }: { reception: ReceptionStore }) {
+  const { guest, status } = useStore(reception);
+  const [walkTransitionRef, walkTransition] = useTransition(guest?.speed || 0);
+
+  React.useLayoutEffect(() => {
+    if (status === 'entering') {
+      const receptionElement = document.getElementById('leftDoor')!;
+
+      walkTransition(receptionElement, true);
+    }
+
+    if (status === 'leaving') {
+      const receptionElement = document.getElementById('leftDoor')!;
+
+      walkTransition(receptionElement, false);
+    }
+  }, [status]);
+
+  return (
+    <button
+      id={`reception-${getExomeId(reception)}`}
+      className={styles.tile}
+    >
+      <GameObject>
+        <span
+          ref={walkTransitionRef}
+          style={{ position: 'absolute' }}
+        >
+          {guest && (<Client />)}
+        </span>
+        <span style={{ color: 'transparent' }}>{`_`}</span>
+      </GameObject>
+    </button>
+  );
+}
+
 export function TileWaiter({ waiter }: { waiter: WaiterStore }) {
-  const { name, isBusy, speed, serving } = useStore(waiter);
+  const { name, isBusy, speed, served, serving } = useStore(waiter);
   const [serveTransitionRef, serveTransition] = useTransition(speed);
 
   React.useLayoutEffect(() => {
-    if (serving) {
+    if (serving && isBusy) {
       const seatElement = document.getElementById('seat-' + getExomeId(serving))!;
 
       serveTransition(seatElement);
     }
-  }, [serving]);
+
+    if (served && isBusy) {
+      const seatElement = document.getElementById('seat-' + getExomeId(served))!;
+
+      setTimeout(() => {
+        serveTransition(seatElement, true);
+      }, 10);
+    }
+  }, [serving, served, isBusy]);
 
   return (
     <button
@@ -145,19 +209,20 @@ export function TileWaiter({ waiter }: { waiter: WaiterStore }) {
           {serving && <span style={{ position: 'absolute' }}>🍲</span>}
           🧍
         </span>
-        {`__`}
+        <span style={{ color: 'transparent' }}>{`_`}</span>
       </GameObject>
     </button>
   );
 }
 
 export function TileSeat({ seat }: { seat: SeatStore }) {
-  const { client, status } = useStore(seat);
+  const { client, status, reception } = useStore(seat);
   const [walkTransitionRef, walkTransition] = useTransition(client?.walkingSpeed || 0);
 
   React.useLayoutEffect(() => {
     if (status === 'walking') {
-      // walkTransition();
+      const receptionElement = document.getElementById('reception-' + getExomeId(reception!))!;
+      walkTransition(receptionElement, true);
     }
   }, [status]);
 
@@ -172,43 +237,32 @@ export function TileSeat({ seat }: { seat: SeatStore }) {
           style={{ position: 'absolute' }}
         >
           {client && (
-            status === 'eating' ? (
-              <>
-                <span style={{ position: 'absolute' }}>🧍‍♂️</span>
-                <span style={{ position: 'absolute' }}>🍜</span>
-              </>
-            ) : (
-              status === 'ordered' ? (
+            <>
+              <span style={{ position: 'absolute' }}>
+                <Client />
+              </span>
+
+              {status === 'eating' ? (
                 <>
-                  <span style={{ position: 'absolute' }}>🧍‍♂️</span>
-                  <span style={{ position: 'absolute' }}>🔖</span>
+                  <span style={{ position: 'absolute' }}>🍲</span>
                 </>
               ) : (
-                status === 'waiting' || status === 'cooking' || status === 'serving' ? (
+                status === 'ordered' ? (
                   <>
-                    <span style={{ position: 'absolute' }}>🧍‍♂️</span>
-                    <span style={{ position: 'absolute' }}>⏳</span>
+                    <span style={{ position: 'absolute', fontSize: 20, marginLeft: 10, marginTop: -28 }}>🔖</span>
                   </>
                 ) : (
-                  <>
-                    <span style = {{ position: 'absolute' }}>🧍‍♂️</span>
-                  </>
+                  (status === 'waiting' || status === 'cooking' || status === 'serving') && (
+                    <>
+                      <span style={{ position: 'absolute', fontSize: 20, marginLeft: 10, marginTop: -28 }}>⏳</span>
+                    </>
+                  )
                 )
-              )
-            )
+              )}
+            </>
           )}
         </span>
         🪑
-        {/* {client && (
-          <span>
-            {status === 'walking' && <span>🚶</span>}
-            {status === 'ordered' && <span>🔖</span>}
-            {status === 'cooking' && <span>👨🏻‍🍳</span>}
-            {status === 'waiting' && <span>⏳</span>}
-            {status === 'serving' && <span>🍴</span>}
-            {status === 'eating' && <span>🍖</span>}
-          </span>
-        )} */}
       </GameObject>
     </button>
   );

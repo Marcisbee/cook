@@ -4,8 +4,8 @@ import styles from './client.module.scss';
 
 export function Client() {
   return (
-    <div className={styles.client}>
-      🧍
-    </div>
+    <span className={styles.client}>
+      🧍‍♂️
+    </span>
   );
 }

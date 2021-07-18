@@ -3,6 +3,7 @@ import { parseFloorPlan, TileType } from '../components/scene/scene';
 
 import { ChefStore } from './chef.store';
 import { ClientStore } from './client.store';
+import { ReceptionStore } from './reception.store';
 import { SeatStore } from './seat.store';
 import { WaiterStore } from './waiter.store';
 
@@ -10,8 +11,14 @@ export class RestaurantStore extends Exome {
   public money = 0;
   public seats: SeatStore[] = [
     new SeatStore(this),
+    // new SeatStore(this),
   ];
   public popularity = 1;
+
+  public maxChefs: number;
+  public maxWaiters: number;
+  public maxSeats: number;
+  public maxReception: number;
 
   public floorPlan: TileType[][];
 
@@ -23,7 +30,8 @@ export class RestaurantStore extends Exome {
   public waiters: WaiterStore[] = [];
   public serveQueue: (SeatStore | null)[] = [];
 
-  public clients: any[] = [];
+  public clients: ClientStore[] = [];
+  public reception: ReceptionStore[] = [];
 
   constructor(
     public name: string,
@@ -48,34 +56,45 @@ xxxxxxxxxxxx
 
     this.floorPlan = layoutPlan.floor;
     this.serveQueue = new Array(layoutPlan.counterSpaces).fill(null);
+    this.maxChefs = layoutPlan.chefSpaces;
+    this.maxWaiters = layoutPlan.waiterSpaces;
+    this.maxSeats = layoutPlan.seatSpaces;
+    this.maxReception = layoutPlan.receptionSpaces;
+
+    this.reception = new Array(this.maxReception)
+      .fill(null)
+      .map(() => new ReceptionStore(this));
 
     this.hireChef(new ChefStore(owner, 1000));
-    // this.hireWaiter(new WaiterStore('Jane', 2000));
-
-    const clientsComingIn = () => {
-      setTimeout(() => {
-        this.welcomeClients(1);
-
-        clientsComingIn();
-      }, 3000 / this.seats.length);
-    }
-
-    clientsComingIn();
+    // this.hireWaiter(new WaiterStore('Jane', 1000));
   }
 
   public forceReload() {}
 
-  public income(amount: number) {
+  public income(amount: number): boolean {
     this.addLog(`🤑 Income: +${amount / 100}`);
-    return this.money += amount;
+    this.money += amount;
+
+    return true;
   }
 
-  public cost(amount: number) {
+  public cost(amount: number): boolean {
+    if (this.money - amount < 0) {
+      return false;
+    }
+
     this.addLog(`💸 Cost: -${amount / 100}`);
-    return this.money -= amount;
+    this.money -= amount;
+
+    return true;
   }
 
   public hireChef(chef: ChefStore) {
+    if (this.maxChefs <= this.chefs.length) {
+      this.addLog(`🚨 Reached maximum of ${this.maxChefs} chefs`);
+      return;
+    }
+
     chef.hire(this);
 
     this.chefs.push(chef);
@@ -90,6 +109,11 @@ xxxxxxxxxxxx
   }
 
   public hireWaiter(waiter: WaiterStore) {
+    if (this.maxWaiters <= this.waiters.length) {
+      this.addLog(`🚨 Reached maximum of ${this.maxWaiters} waiters`);
+      return;
+    }
+
     waiter.hire(this);
 
     this.waiters.push(waiter);
@@ -108,37 +132,16 @@ xxxxxxxxxxxx
   }
 
   public buySeats(size: number) {
+    if (this.maxSeats <= this.seats.length) {
+      this.addLog(`🚨 Reached maximum of ${this.maxSeats} seats`);
+      return;
+    }
+
     const price = this.getSeatsPrice(size);
 
     this.cost(price);
 
     this.seats.push(new SeatStore(this));
-  }
-
-  public welcomeClients(size: number) {
-    this.addLog(`❓ New client comes in`);
-    const emptySeats = this.seats.filter((seat) => seat.client === null);
-
-    if (emptySeats.length < this.clients.length + size) {
-      this.addLog('📛 Not enough seats, client leaves');
-      return false;
-    }
-
-    const newClients = new Array(size)
-      .fill(0)
-      .map(() => new ClientStore());
-
-    newClients.forEach((client) => {
-      const emptySeat = emptySeats.find((seat) => seat.client === null);
-
-      if (!emptySeat) {
-        return;
-      }
-
-      emptySeat.seatClient(client)
-    });
-
-    return true;
   }
 
   public orderFood(seat: SeatStore) {

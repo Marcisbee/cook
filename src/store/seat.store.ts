@@ -2,11 +2,13 @@ import { Exome } from 'exome';
 import { ChefStore } from './chef.store';
 
 import { ClientStore } from './client.store';
+import { ReceptionStore } from './reception.store';
 import { RestaurantStore } from './restaurant.store';
 import { WaiterStore } from './waiter.store';
 
 export class SeatStore extends Exome {
   public client: ClientStore | null = null;
+  public reception: ReceptionStore | null = null;
   public status: 'serving' | 'waiting' | 'walking' | 'ordered' | 'cooking' | 'eating' | null = null;
 
   public chef?: ChefStore;
@@ -16,8 +18,9 @@ export class SeatStore extends Exome {
     super();
   }
 
-  public async seatClient(client: ClientStore) {
+  public async seatClient(client: ClientStore, reception: ReceptionStore) {
     this.client = client;
+    this.reception = reception;
     this.setStatus('walking');
 
     await new Promise((resolve) => setTimeout(resolve, client.walkingSpeed));
@@ -50,6 +53,7 @@ export class SeatStore extends Exome {
     this.setStatus(null);
 
     this.client = null;
+    this.reception = null;
     this.restaurant.income(100);
   }
 

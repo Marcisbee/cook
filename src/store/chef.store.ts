@@ -56,7 +56,12 @@ export class ChefStore extends Exome {
 
     if (this.costAmount) {
       this.costIntervalHolder[id] = setInterval(() => {
-        restaurant.cost(this.costAmount);
+        const paid = restaurant.cost(this.costAmount);
+
+        if (!paid) {
+          this.restaurant?.addLog(`Chef ${this.name} left, because salary can't be paid.`);
+          this.restaurant?.fireChef(this);
+        }
       }, this.costInterval);
     }
 

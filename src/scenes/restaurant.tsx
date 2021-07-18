@@ -159,11 +159,9 @@ export function Restaurant() {
             <li key={index}>
               🧍 Waiter "{waiter.name}" ({waiter.speed / 1000}s per food)
               {` `}
-              {index !== 0 && (
-                <button onClick={() => fireWaiter(waiter)}>
-                  Fire
-                </button>
-              )}
+              <button onClick={() => fireWaiter(waiter)}>
+                Fire
+              </button>
             </li>
           ))}
         </ul>

@@ -6,7 +6,7 @@ import { RestaurantStore } from '../../store/restaurant.store';
 // import { Client } from '../client/client';
 import { Grid } from '../grid/grid';
 import { Row } from '../row/row';
-import { Tile, TileChef, TileCounter, TileSeat, TileWaiter } from '../tile/tile';
+import { Tile, TileChef, TileCounter, TileReception, TileSeat, TileWaiter } from '../tile/tile';
 
 import styles from './scene.module.scss';
 
@@ -31,8 +31,20 @@ export type TileType =
 
   | null;
 
-export function parseFloorPlan(floorPlan: string): { floor: TileType[][], counterSpaces: number } {
+export function parseFloorPlan(floorPlan: string): {
+  floor: TileType[][],
+  chefSpaces: number,
+  waiterSpaces: number,
+  seatSpaces: number,
+  counterSpaces: number,
+  receptionSpaces: number,
+} {
+  let chefSpaces = 0;
+  let waiterSpaces = 0;
+  let seatSpaces = 0;
   let counterSpaces = 0;
+  let receptionSpaces = 0;
+
   const floor = floorPlan
     .split(/\n/)
     .slice(1, -1)
@@ -61,15 +73,19 @@ export function parseFloorPlan(floorPlan: string): { floor: TileType[][], counte
               return 'rightDoor';
 
             case 'C':
+              chefSpaces += 1;
               return 'chef';
 
             case 'W':
+              waiterSpaces += 1;
               return 'waiter';
 
             case 'T':
+              seatSpaces += 1;
               return 'table';
 
             case 'R':
+              receptionSpaces += 1;
               return 'reception';
 
             default:
@@ -80,7 +96,11 @@ export function parseFloorPlan(floorPlan: string): { floor: TileType[][], counte
 
   return {
     floor,
+    chefSpaces,
+    waiterSpaces,
+    seatSpaces,
     counterSpaces,
+    receptionSpaces,
   };
 }
 
@@ -95,12 +115,14 @@ export function Scene({ restaurant }: SceneProps) {
     waiters,
     seats,
     serveQueue,
+    reception,
   } = useStore(restaurant);
 
   const availableChefs = chefs.slice();
   const availableWaiters = waiters.slice();
   const availableSeats = seats.slice();
   const availableForServing = serveQueue.slice();
+  const availableForReception = reception.slice();
 
   return (
     <div className={styles.scene}>
@@ -137,6 +159,26 @@ export function Scene({ restaurant }: SceneProps) {
                   <TileSeat
                     key={getExomeId(seat)}
                     seat={seat}
+                  />
+                );
+              }
+
+              if (type === 'reception') {
+                const receptor = availableForReception.shift();
+
+                if (!receptor) {
+                  return (
+                    <Tile
+                      key={tIndex}
+                      type={type}
+                    />
+                  );
+                }
+
+                return (
+                  <TileReception
+                    key={'reception-' + getExomeId(receptor)}
+                    reception={receptor}
                   />
                 );
               }

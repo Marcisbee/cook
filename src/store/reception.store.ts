@@ -14,10 +14,13 @@ export class ReceptionStore extends Exome {
 
   constructor(
     public restaurant: RestaurantStore,
+    delay: number = 0,
   ) {
     super();
 
-    this.refreshIncomingGuests();
+    setTimeout(() => {
+      this.refreshIncomingGuests();
+    }, delay);
   }
 
   private setGuest(guest: Guest | null) {
@@ -30,6 +33,10 @@ export class ReceptionStore extends Exome {
 
   private setStatus(status: 'entering' | 'leaving' | null) {
     this.status = status;
+  }
+
+  private getTimeout(): number {
+    return 6000 / (this.restaurant?.popularity || 1);
   }
 
   private async refreshIncomingGuests() {
@@ -59,7 +66,7 @@ export class ReceptionStore extends Exome {
 
       setTimeout(
         this.refreshIncomingGuests,
-        (2000 * (Math.random() * 4)),
+        this.getTimeout(),
       );
 
       return;
@@ -73,7 +80,7 @@ export class ReceptionStore extends Exome {
 
     setTimeout(
       this.refreshIncomingGuests,
-      (2000 * (Math.random() * 4)),
+      this.getTimeout(),
     );
   }
 }

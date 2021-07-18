@@ -63,10 +63,10 @@ xxxxxxxxxxxx
 
     this.reception = new Array(this.maxReception)
       .fill(null)
-      .map(() => new ReceptionStore(this));
+      .map((_, index) => new ReceptionStore(this, index * 1000));
 
     this.hireChef(new ChefStore(owner, 1000));
-    // this.hireWaiter(new WaiterStore('Jane', 1000));
+    this.hireWaiter(new WaiterStore('Jane', 1000));
   }
 
   public forceReload() {}
@@ -144,15 +144,23 @@ xxxxxxxxxxxx
     this.seats.push(new SeatStore(this));
   }
 
-  public orderFood(seat: SeatStore) {
-    this.cookQueue.push(seat);
-  }
-
   public addLog = (message: string) => {
     this.log.push(message);
 
     if (this.log.length > 10) {
       this.log.shift();
     }
+  }
+
+  public getPublicationPrice = () => {
+    return (this.popularity + 1) * 100;
+  }
+
+  public buyPublication() {
+    const price = this.getPublicationPrice();
+
+    this.cost(price);
+
+    this.popularity += 1;
   }
 }

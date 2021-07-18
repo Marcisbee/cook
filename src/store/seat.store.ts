@@ -25,7 +25,7 @@ export class SeatStore extends Exome {
 
     await new Promise((resolve) => setTimeout(resolve, client.walkingSpeed));
 
-    this.restaurant.orderFood(this);
+    this.restaurant.cookQueue.push(this);
     this.setStatus('ordered');
   }
 

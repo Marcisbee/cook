@@ -40,6 +40,10 @@ export function Restaurant() {
     name,
     money,
 
+    popularity,
+    getPublicationPrice,
+    buyPublication,
+
     seats,
     getSeatsPrice,
     buySeats,
@@ -186,6 +190,19 @@ export function Restaurant() {
           ))}
         </ul>
 
+        <br />
+        <hr />
+
+        Your popularity: {popularity}x {(
+          <button
+            onClick={() => {
+              buyPublication();
+            }}
+            disabled={getPublicationPrice() > totalMoney}
+          >
+            Buy publication ({formatMoney(getPublicationPrice())})
+          </button>
+        )}
       </div>
 
       <div style={{ position: 'absolute', top: 0, right: 0, width: 200 }}>

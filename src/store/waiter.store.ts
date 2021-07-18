@@ -1,4 +1,5 @@
-import { Exome, getExomeId } from 'exome';
+import { Exome, getExomeId, onAction } from 'exome';
+import { ChefStore } from './chef.store';
 
 import { RestaurantStore } from './restaurant.store';
 import { SeatStore } from './seat.store';
@@ -6,8 +7,8 @@ import { SeatStore } from './seat.store';
 export class WaiterStore extends Exome {
   public restaurant: RestaurantStore | null = null;
 
-  public foodIntervalHolder: Record<string, any> = {};
-  public costIntervalHolder: Record<string, any> = {};
+  public foodIntervalHolder: Record<string, () => void> = {};
+  public costIntervalHolder: Record<string, () => void> = {};
 
   public isBusy = false;
   public serving: SeatStore | null = null;
@@ -28,8 +29,8 @@ export class WaiterStore extends Exome {
 
     // this.restaurant = null;
 
-    clearInterval(this.foodIntervalHolder[id]);
-    clearInterval(this.costIntervalHolder[id]);
+    this.foodIntervalHolder[id]?.();
+    this.costIntervalHolder[id]?.();
   }
 
   public hire(restaurant: RestaurantStore) {
@@ -37,36 +38,45 @@ export class WaiterStore extends Exome {
 
     this.restaurant = restaurant;
 
-    clearInterval(this.foodIntervalHolder[id]);
-    clearInterval(this.costIntervalHolder[id]);
+    this.foodIntervalHolder[id]?.();
+    this.costIntervalHolder[id]?.();
 
-    this.foodIntervalHolder[id] = setInterval(() => {
-      if (this.isBusy) {
+    this.foodIntervalHolder[id] = onAction(ChefStore, 'cook', () => {
+      if (!this.restaurant) {
         return;
       }
 
-      const food = restaurant.serveQueue.findIndex((q) => !!q);
-
-      if (food > -1) {
-        const [seat] = restaurant.serveQueue.splice(food, 1, null);
-
-        this.serve(seat!);
-      }
-    }, 1000);
+      this.checkIfNeedsServing();
+    });
 
     if (this.costAmount) {
-      this.costIntervalHolder[id] = setInterval(() => {
+      const target = setInterval(() => {
         const paid = restaurant.cost(this.costAmount);
 
         if (!paid) {
-          this.restaurant?.addLog(`Chef ${this.name} left, because salary can't be paid.`);
+          this.restaurant?.addLog(`Waiter ${this.name} left, because salary can't be paid.`);
           this.restaurant?.fireWaiter(this);
         }
       }, this.costInterval);
+      this.costIntervalHolder[id] = () => clearInterval(target);
     }
 
     if (this.costInitial) {
       restaurant.cost(this.costInitial);
+    }
+  }
+
+  public checkIfNeedsServing() {
+    if (this.isBusy) {
+      return;
+    }
+
+    const food = this.restaurant?.serveQueue.findIndex((q) => !!q);
+
+    if (food! > -1) {
+      const [seat] = this.restaurant?.serveQueue.splice(food!, 1, null)!;
+
+      this.serve(seat!);
     }
   }
 
@@ -89,10 +99,12 @@ export class WaiterStore extends Exome {
 
     this.isBusy = false;
     this.served = null;
+
+    this.checkIfNeedsServing();
   }
 }
 
-const chefSpeedyGonzales = new WaiterStore(
+const waiterSpeedyGonzales = new WaiterStore(
   'Speedy Gonzales',
   1000,
   500,
@@ -101,5 +113,5 @@ const chefSpeedyGonzales = new WaiterStore(
 );
 
 export const allWaiters = [
-  chefSpeedyGonzales,
+  waiterSpeedyGonzales,
 ];

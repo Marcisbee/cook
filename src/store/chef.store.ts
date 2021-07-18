@@ -1,4 +1,4 @@
-import { Exome, getExomeId } from 'exome';
+import { Exome, getExomeId, onAction } from 'exome';
 
 import { RestaurantStore } from './restaurant.store';
 import { SeatStore } from './seat.store';
@@ -26,8 +26,8 @@ export class ChefStore extends Exome {
 
     // this.restaurant = null;
 
-    clearInterval(this.foodIntervalHolder[id]);
-    clearInterval(this.costIntervalHolder[id]);
+    this.foodIntervalHolder[id]?.();
+    this.costIntervalHolder[id]?.();
   }
 
   public hire(restaurant: RestaurantStore) {
@@ -35,27 +35,19 @@ export class ChefStore extends Exome {
 
     this.restaurant = restaurant;
 
-    clearInterval(this.foodIntervalHolder[id]);
-    clearInterval(this.costIntervalHolder[id]);
+    this.foodIntervalHolder[id]?.();
+    this.costIntervalHolder[id]?.();
 
-    this.foodIntervalHolder[id] = setInterval(() => {
-      if (this.isBusy) {
+    this.foodIntervalHolder[id] = onAction(SeatStore, 'seatClient', () => {
+      if (!this.restaurant) {
         return;
       }
 
-      if (restaurant.serveQueue.indexOf(null) === -1) {
-        return;
-      }
-
-      if (restaurant.cookQueue.length > 0) {
-        const seat = restaurant.cookQueue.shift()!;
-
-        this.cook(seat);
-      }
-    }, 1000);
+      this.checkIfNeedsCooking();
+    });
 
     if (this.costAmount) {
-      this.costIntervalHolder[id] = setInterval(() => {
+      const target = setInterval(() => {
         const paid = restaurant.cost(this.costAmount);
 
         if (!paid) {
@@ -63,6 +55,7 @@ export class ChefStore extends Exome {
           this.restaurant?.fireChef(this);
         }
       }, this.costInterval);
+      this.costIntervalHolder[id] = () => clearInterval(target);
     }
 
     if (this.costInitial) {
@@ -70,7 +63,23 @@ export class ChefStore extends Exome {
     }
   }
 
-  private async cook(seat: SeatStore) {
+  public checkIfNeedsCooking() {
+    if (this.isBusy) {
+      return;
+    }
+
+    if (this.restaurant!.serveQueue.indexOf(null) === -1) {
+      return;
+    }
+
+    if (this.restaurant!.cookQueue.length > 0) {
+      const seat = this.restaurant!.cookQueue.shift()!;
+
+      this.cook(seat);
+    }
+  }
+
+  public async cook(seat: SeatStore) {
     this.isBusy = true;
 
     this.restaurant?.forceReload();
@@ -83,6 +92,8 @@ export class ChefStore extends Exome {
 
     this.restaurant!.serveQueue[index] = seat;
     this.restaurant!.forceReload();
+
+    this.checkIfNeedsCooking();
   }
 }
 

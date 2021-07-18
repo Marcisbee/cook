@@ -132,8 +132,8 @@ export function TileChef({ chef }: { chef: ChefStore }) {
       className={styles.tile}
     >
       <GameObject>
-        {!isBusy && '👨🏻‍🍳'}
-        {isBusy && <><span style={{ position: 'absolute' }}>🥘</span>👨🏻‍🍳</>}
+        {isBusy && <span style={{ position: 'absolute', fontSize: 26, marginLeft: 10, marginTop: -28 }}>🍲</span>}
+        👨🏻‍🍳
       </GameObject>
     </button>
   );

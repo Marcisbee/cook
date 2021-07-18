@@ -65,7 +65,7 @@ xxxxxxxxxxxx
       .fill(null)
       .map((_, index) => new ReceptionStore(this, index * 1000));
 
-    this.hireChef(new ChefStore(owner, 1000));
+    this.hireChef(new ChefStore(owner, 2000));
     this.hireWaiter(new WaiterStore('Jane', 1000));
   }
 

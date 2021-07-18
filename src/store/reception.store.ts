@@ -18,9 +18,7 @@ export class ReceptionStore extends Exome {
   ) {
     super();
 
-    setTimeout(() => {
-      this.refreshIncomingGuests();
-    }, delay);
+    setTimeout(this.refreshIncomingGuests, delay);
   }
 
   private setGuest(guest: Guest | null) {
@@ -41,7 +39,7 @@ export class ReceptionStore extends Exome {
 
   private async refreshIncomingGuests() {
     this.setGuest({
-      name: 'Jane',
+      name: 'Omar',
       speed: 1000,
     });
     this.setStatus('entering');
@@ -50,7 +48,7 @@ export class ReceptionStore extends Exome {
     await new Promise((resolve) => setTimeout(resolve, this.guest!.speed));
 
     // Looking for table
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Client checks if there are any empty seats
     const emptySeat = this.restaurant.seats

@@ -104,14 +104,23 @@ export class WaiterStore extends Exome {
   }
 }
 
+const waiterLunaLindrome = new WaiterStore(
+  'Luna Lindrome',
+  1500,
+  500,
+  500,
+  30000,
+);
+
 const waiterSpeedyGonzales = new WaiterStore(
   'Speedy Gonzales',
   1000,
-  500,
+  1000,
   500,
   50000,
 );
 
 export const allWaiters = [
+  waiterLunaLindrome,
   waiterSpeedyGonzales,
 ];

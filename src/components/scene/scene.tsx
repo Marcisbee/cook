@@ -6,13 +6,15 @@ import { RestaurantStore } from '../../store/restaurant.store';
 // import { Client } from '../client/client';
 import { Grid } from '../grid/grid';
 import { Row } from '../row/row';
-import { Tile, TileChef, TileSeat, TileWaiter } from '../tile/tile';
+import { Tile, TileChef, TileCounter, TileSeat, TileWaiter } from '../tile/tile';
 
 import styles from './scene.module.scss';
 
 export type TileType =
   | 'outerWall'
   | 'innerWall'
+
+  | 'counter'
 
   | 'floor'
 
@@ -29,8 +31,9 @@ export type TileType =
 
   | null;
 
-export function parseFloorPlan(floorPlan: string): TileType[][] {
-  return floorPlan
+export function parseFloorPlan(floorPlan: string): { floor: TileType[][], counterSpaces: number } {
+  let counterSpaces = 0;
+  const floor = floorPlan
     .split(/\n/)
     .slice(1, -1)
     .map((row) => (
@@ -46,6 +49,10 @@ export function parseFloorPlan(floorPlan: string): TileType[][] {
 
             case '.':
               return 'floor';
+
+            case '_':
+              counterSpaces += 1;
+              return 'counter';
 
             case '[':
               return 'leftDoor';
@@ -70,6 +77,11 @@ export function parseFloorPlan(floorPlan: string): TileType[][] {
           }
         })
     ));
+
+  return {
+    floor,
+    counterSpaces,
+  };
 }
 
 interface SceneProps {
@@ -82,11 +94,13 @@ export function Scene({ restaurant }: SceneProps) {
     chefs,
     waiters,
     seats,
+    serveQueue,
   } = useStore(restaurant);
 
   const availableChefs = chefs.slice();
   const availableWaiters = waiters.slice();
   const availableSeats = seats.slice();
+  const availableForServing = serveQueue.slice();
 
   return (
     <div className={styles.scene}>
@@ -122,6 +136,26 @@ export function Scene({ restaurant }: SceneProps) {
                 return (
                   <TileSeat
                     key={getExomeId(seat)}
+                    seat={seat}
+                  />
+                );
+              }
+
+              if (type === 'counter') {
+                const seat = availableForServing.shift();
+
+                if (!seat) {
+                  return (
+                    <Tile
+                      key={tIndex}
+                      type={type}
+                    />
+                  );
+                }
+
+                return (
+                  <TileCounter
+                    key={'counter-' + getExomeId(seat)}
                     seat={seat}
                   />
                 );

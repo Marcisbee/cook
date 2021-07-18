@@ -43,6 +43,10 @@ export class ChefStore extends Exome {
         return;
       }
 
+      if (restaurant.serveQueue.indexOf(null) === -1) {
+        return;
+      }
+
       if (restaurant.cookQueue.length > 0) {
         const seat = restaurant.cookQueue.shift()!;
 
@@ -64,14 +68,16 @@ export class ChefStore extends Exome {
   private async cook(seat: SeatStore) {
     this.isBusy = true;
 
-    this.restaurant?.addLog(`👨🏻‍🍳 "${this.name}" is cooking for ${this.speed / 1000}s`);
     this.restaurant?.forceReload();
 
     await seat.cook(new Promise((resolve) => setTimeout(resolve, this.speed)));
 
     this.isBusy = false;
 
-    this.restaurant?.serveQueue.push(seat);
+    const index = this.restaurant?.serveQueue.indexOf(null)!;
+
+    this.restaurant!.serveQueue[index] = seat;
+    this.restaurant!.forceReload();
   }
 }
 
@@ -80,7 +86,7 @@ const chefRodrigoSanchez = new ChefStore(
   3000,
   500,
   2000,
-  30000,
+  120000,
 );
 
 const chefFernandoGusto = new ChefStore(
@@ -88,7 +94,7 @@ const chefFernandoGusto = new ChefStore(
   2000,
   1000,
   2000,
-  55000,
+  120000,
 );
 
 const chefJohnWick = new ChefStore(
@@ -96,7 +102,7 @@ const chefJohnWick = new ChefStore(
   1000,
   2000,
   5000,
-  30000,
+  120000,
 );
 
 export const allChefs = [

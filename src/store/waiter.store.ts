@@ -10,6 +10,7 @@ export class WaiterStore extends Exome {
   public costIntervalHolder: Record<string, any> = {};
 
   public isBusy = false;
+  public serving: SeatStore | null = null;
 
   constructor(
     public name: string,
@@ -43,10 +44,12 @@ export class WaiterStore extends Exome {
         return;
       }
 
-      if (restaurant.serveQueue.length > 0) {
-        const seat = restaurant.serveQueue.shift()!;
+      const food = restaurant.serveQueue.findIndex((q) => !!q);
 
-        this.serve(seat);
+      if (food > -1) {
+        const [seat] = restaurant.serveQueue.splice(food, 1, null);
+
+        this.serve(seat!);
       }
     }, 1000);
 
@@ -62,23 +65,24 @@ export class WaiterStore extends Exome {
   }
 
   public async serve(seat: SeatStore) {
+    this.serving = seat;
     this.isBusy = true;
 
-    this.restaurant?.addLog(`🧍 "${this.name}" is serving for ${this.speed / 1000}s`);
     this.restaurant?.forceReload();
 
     await seat.serve(new Promise((resolve) => setTimeout(resolve, this.speed)));
 
+    this.serving = null;
     this.isBusy = false;
   }
 }
 
 const chefSpeedyGonzales = new WaiterStore(
   'Speedy Gonzales',
-  3000,
   500,
-  2000,
-  30000,
+  500,
+  500,
+  50000,
 );
 
 export const allWaiters = [

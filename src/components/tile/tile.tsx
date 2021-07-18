@@ -1,3 +1,4 @@
+import { getExomeId } from 'exome';
 import { useStore } from 'exome/react';
 import React from 'react';
 
@@ -40,6 +41,15 @@ export function Tile({ type }: TileProps) {
     return (
       <button
         className={styles.tile}
+        style={{ backgroundColor: '#aaa' }}
+      />
+    )
+  }
+
+  if (type === 'counter') {
+    return (
+      <button
+        className={styles.tile}
         style={{ backgroundColor: '#ccc' }}
       />
     )
@@ -70,11 +80,37 @@ export function Tile({ type }: TileProps) {
   );
 }
 
+export function TileCounter({ seat }: { seat: SeatStore }) {
+  const { restaurant } = useStore(seat);
+
+  return (
+    <button
+      id={`counter-${getExomeId(seat)}`}
+      className={`${styles.tile} ${styles.tileClick}`}
+      onClick={async () => {
+        const index = restaurant.serveQueue.indexOf(seat);
+        const [foodForSeat] = restaurant.serveQueue.splice(index, 1, null);
+
+        await foodForSeat!.serve(Promise.resolve());
+        restaurant.forceReload();
+      }}
+    >
+      <GameObject>
+        🍲
+      </GameObject>
+    </button>
+  );
+}
+
 export function TileChef({ chef }: { chef: ChefStore }) {
   const { name, isBusy } = useStore(chef);
 
   return (
-    <button title={name} className={styles.tile}>
+    <button
+      id={`chef-${getExomeId(chef)}`}
+      title={name}
+      className={styles.tile}
+    >
       <GameObject>
         {!isBusy && '👨🏻‍🍳'}
         {isBusy && <><span style={{ position: 'absolute' }}>🥘</span>👨🏻‍🍳</>}
@@ -84,30 +120,29 @@ export function TileChef({ chef }: { chef: ChefStore }) {
 }
 
 export function TileWaiter({ waiter }: { waiter: WaiterStore }) {
-  const { name, isBusy, speed } = useStore(waiter);
-  const [serveTransitionRef, serveTransition] = useTransition([
-    {
-      transform: 'translateX(0px)',
-    },
-    {
-      transform: 'translateX(-150px)',
-    },
-  ], speed);
+  const { name, isBusy, speed, serving } = useStore(waiter);
+  const [serveTransitionRef, serveTransition] = useTransition(speed);
 
   React.useLayoutEffect(() => {
-    if (isBusy) {
-      serveTransition();
+    if (serving) {
+      const seatElement = document.getElementById('seat-' + getExomeId(serving))!;
+
+      serveTransition(seatElement);
     }
-  }, [isBusy]);
+  }, [serving]);
 
   return (
-    <button title={name} className={styles.tile}>
+    <button
+      id={`waiter-${getExomeId(waiter)}`}
+      title={name}
+      className={styles.tile}
+    >
       <GameObject>
         <span
           ref={serveTransitionRef}
           style={{ position: 'absolute' }}
         >
-          {isBusy && <span style={{ position: 'absolute' }}>🍲</span>}
+          {serving && <span style={{ position: 'absolute' }}>🍲</span>}
           🧍
         </span>
         {`__`}
@@ -118,23 +153,19 @@ export function TileWaiter({ waiter }: { waiter: WaiterStore }) {
 
 export function TileSeat({ seat }: { seat: SeatStore }) {
   const { client, status } = useStore(seat);
-  const [walkTransitionRef, walkTransition] = useTransition([
-    {
-      transform: 'translateX(100px)',
-    },
-    {
-      transform: 'translateX(0px)',
-    },
-  ], client?.walkingSpeed || 0);
+  const [walkTransitionRef, walkTransition] = useTransition(client?.walkingSpeed || 0);
 
   React.useLayoutEffect(() => {
     if (status === 'walking') {
-      walkTransition();
+      // walkTransition();
     }
   }, [status]);
 
   return (
-    <button className={styles.tile}>
+    <button
+      id={`seat-${getExomeId(seat)}`}
+      className={styles.tile}
+    >
       <GameObject>
         <span
           ref={walkTransitionRef}

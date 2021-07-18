@@ -1,4 +1,3 @@
-
 .tile {
   // border: solid 1px rgba(blue, 0.4);
   border: 0;
@@ -8,10 +7,23 @@
   width: 30px;
   pointer-events: auto;
   position: relative;
-  cursor: pointer;
+  cursor: default;
   outline: none;
+  pointer-events: none;
+
+  &.tileClick {
+    background-color: limegreen;
+    cursor: pointer;
+    pointer-events: all;
+
+    * {
+      cursor: inherit;
+      pointer-events: inherit;
+    }
+
+    &:hover {
+      background-color: lime;
+    }
+  }
 }
 
-// .tile:hover {
-//   background-color: rgba(blue, 0.2);
-// }

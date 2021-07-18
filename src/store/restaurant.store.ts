@@ -1,5 +1,5 @@
 import { Exome } from 'exome';
-import { parseFloorPlan } from '../components/scene/scene';
+import { parseFloorPlan, TileType } from '../components/scene/scene';
 
 import { ChefStore } from './chef.store';
 import { ClientStore } from './client.store';
@@ -13,20 +13,7 @@ export class RestaurantStore extends Exome {
   ];
   public popularity = 1;
 
-  public floorPlan = parseFloorPlan(`
-xxxxxxxxxxxx
-x..........x
-x...T..T...x
-x..........xxxxx
-x...T..T..W-...x
-[.R........-.C.x
-].R........-.C.x
-x...T..T..W-...x
-x..........xxxxx
-x...T..T...x
-x..........x
-xxxxxxxxxxxx
-`);
+  public floorPlan: TileType[][];
 
   public log: string[] = [];
 
@@ -34,7 +21,7 @@ xxxxxxxxxxxx
   public cookQueue: SeatStore[] = [];
 
   public waiters: WaiterStore[] = [];
-  public serveQueue: SeatStore[] = [];
+  public serveQueue: (SeatStore | null)[] = [];
 
   public clients: any[] = [];
 
@@ -44,8 +31,26 @@ xxxxxxxxxxxx
   ) {
     super();
 
-    this.hireChef(new ChefStore(owner, 2000));
-    this.hireWaiter(new WaiterStore('Jane', 2000));
+    const layoutPlan = parseFloorPlan(`
+xxxxxxxxxxxx
+x..........x
+x...T..T...x
+x..........xxxxx
+x...T..T..W_...x
+[.R........_.C.x
+].R........_.C.x
+x...T..T..W_...x
+x..........xxxxx
+x...T..T...x
+x..........x
+xxxxxxxxxxxx
+`);
+
+    this.floorPlan = layoutPlan.floor;
+    this.serveQueue = new Array(layoutPlan.counterSpaces).fill(null);
+
+    this.hireChef(new ChefStore(owner, 1000));
+    // this.hireWaiter(new WaiterStore('Jane', 2000));
 
     const clientsComingIn = () => {
       setTimeout(() => {

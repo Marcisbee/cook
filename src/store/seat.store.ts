@@ -17,7 +17,6 @@ export class SeatStore extends Exome {
   }
 
   public async seatClient(client: ClientStore) {
-    this.restaurant.addLog(`🪑 Client was seated`);
     this.client = client;
     this.setStatus('walking');
 
@@ -51,7 +50,6 @@ export class SeatStore extends Exome {
     this.setStatus(null);
 
     this.client = null;
-    this.restaurant.addLog(`🍜 Client left with full belly`);
     this.restaurant.income(100);
   }
 

@@ -1,6 +1,8 @@
 import { useStore } from 'exome/react';
 import React from 'react';
+
 import { store } from '../store/store';
+import { parseFloorPlan, Scene } from '../components/scene/scene';
 
 export function MainMenu() {
   const { startGame } = useStore(store);

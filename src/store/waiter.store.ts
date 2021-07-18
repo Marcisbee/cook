@@ -9,7 +9,7 @@ export class WaiterStore extends Exome {
   public foodIntervalHolder: Record<string, any> = {};
   public costIntervalHolder: Record<string, any> = {};
 
-  private isBusy = false;
+  public isBusy = false;
 
   constructor(
     public name: string,

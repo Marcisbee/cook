@@ -1,4 +1,5 @@
 import { Exome } from 'exome';
+import { parseFloorPlan } from '../components/scene/scene';
 
 import { ChefStore } from './chef.store';
 import { ClientStore } from './client.store';
@@ -11,6 +12,21 @@ export class RestaurantStore extends Exome {
     new SeatStore(this),
   ];
   public popularity = 1;
+
+  public floorPlan = parseFloorPlan(`
+xxxxxxxxxxxx
+x..........x
+x...T..T...x
+x..........xxxxx
+x...T..T..W-...x
+[.R........-.C.x
+].R........-.C.x
+x...T..T..W-...x
+x..........xxxxx
+x...T..T...x
+x..........x
+xxxxxxxxxxxx
+`);
 
   public log: string[] = [];
 
@@ -122,21 +138,6 @@ export class RestaurantStore extends Exome {
 
   public orderFood(seat: SeatStore) {
     this.cookQueue.push(seat);
-    // return await new Promise((cooking) => {
-    //   const fn: () => (price: number) => void = () => {
-    //     let finalResolve: (price: number) => void;
-
-    //     const finishOrder = new Promise<number>((resolve) => {
-    //       finalResolve = resolve;
-    //     });
-
-    //     cooking(() => finishOrder);
-
-    //     return finalResolve!;
-    //   }
-
-    //   this.cookQueue.push(fn);
-    // });
   }
 
   public addLog = (message: string) => {

@@ -1,0 +1,17 @@
+
+.tile {
+  // border: solid 1px rgba(blue, 0.4);
+  border: 0;
+  border-style: inset;
+  background-color: #f0f0f0;
+  height: 30px;
+  width: 30px;
+  pointer-events: auto;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+
+// .tile:hover {
+//   background-color: rgba(blue, 0.2);
+// }

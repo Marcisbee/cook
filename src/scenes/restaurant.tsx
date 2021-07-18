@@ -1,6 +1,7 @@
 import { getExomeId } from 'exome';
 import { useStore } from 'exome/react';
 import React from 'react';
+import { parseFloorPlan, Scene } from '../components/scene/scene';
 
 import { allChefs } from '../store/chef.store';
 import { SeatStore } from '../store/seat.store';
@@ -73,6 +74,12 @@ export function Restaurant() {
         <hr />
 
         <h1>Restaurant "{name}" {formatMoney(money)}</h1>
+
+        <div>
+          <Scene
+            restaurant={restaurants[active]}
+          />
+        </div>
 
         Seats: {seats.length}
         <br />

@@ -1,0 +1,9 @@
+.client {
+  cursor: default;
+  position: absolute;
+  font-size: 40px;
+  left: 10%;
+  top: 40%;
+  z-index: 5;
+  transform: rotateZ(45deg) rotateX(-65deg) translateZ(80px);
+}

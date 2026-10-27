@@ -1,3 +1,4 @@
+import { guestRoute, pathLength, travelTime } from "./world";
 // A single simulation clock keeps work, wages, pause and saved games in sync.
 export type Stage =
   "arriving" | "ordered" | "cooking" | "ready" | "serving" | "eating";
@@ -56,7 +57,11 @@ export const dishes = [
   { name: "House pasta", icon: "🍝", price: 14, time: 1.5, unlock: 15 },
   { name: "Chef’s special", icon: "🍲", price: 22, time: 2, unlock: 50 },
 ];
+export type ReturnTrip = { seat: number; left: number; duration: number };
+export type Departure = ReturnTrip & { id: number; dish: number };
 export type Game = {
+  returning: Record<string, ReturnTrip>;
+  departures: Departure[];
   version: 1;
   name: string;
   owner: string;
@@ -78,7 +83,8 @@ export type Game = {
 };
 export type Action =
   | { type: "tick"; seconds: number }
-  | { type: "seat" | "publicity" | "serve" | "pause" | "speed" }
+  | { type: "seat" | "publicity" | "pause" | "speed" }
+  | { type: "serve"; seat?: number }
   | { type: "hire" | "fire"; id: string }
   | { type: "dish"; dish: number };
 export const seatPrice = (g: Game) => 20 * g.seats.length;
@@ -87,6 +93,8 @@ export const arrivalSeconds = (g: Game) => 10 / (1 + (g.popularity - 1) * 0.35);
 export function newGame(name: string, owner: string): Game {
   return {
     version: 1,
+    returning: {},
+    departures: [],
     name: name.trim().slice(0, 40) || "Black Oasis",
     owner: owner.trim().slice(0, 30) || "John Cook",
     cash: 20,
@@ -124,6 +132,7 @@ function spend(g: Game, amount: number) {
 }
 function release(g: Game, id: string) {
   g.staff = g.staff.filter((s) => s !== id);
+  delete g.returning[id];
   g.seats.forEach((guest) => {
     if (guest?.worker === id)
       transition(guest, guest.stage === "cooking" ? "ordered" : "ready", 0);
@@ -138,6 +147,10 @@ export function update(game: Game, action: Action): Game {
     return game;
   const g: Game = {
     ...game,
+    returning: Object.fromEntries(
+      Object.entries(game.returning).map(([id, trip]) => [id, { ...trip }]),
+    ),
+    departures: game.departures.map((d) => ({ ...d })),
     seats: game.seats.map((s) => (s ? { ...s } : null)),
     staff: [...game.staff],
     log: [...game.log],
@@ -193,8 +206,13 @@ export function update(game: Game, action: Action): Game {
       return g;
     case "serve": {
       // Manual serving always remains available, even with no money or staff.
-      const guest = g.seats.find((s) => s?.stage === "ready");
-      if (guest) transition(guest, "serving", 1, "player");
+      if (g.returning.player || g.seats.some((s) => s?.worker === "player"))
+        return g;
+      const seat =
+        action.seat ?? g.seats.findIndex((s) => s?.stage === "ready");
+      const guest = g.seats[seat];
+      if (guest?.stage === "ready")
+        transition(guest, "serving", travelTime(seat, "player", 1), "player");
       return g;
     }
     case "tick":
@@ -203,6 +221,15 @@ export function update(game: Game, action: Action): Game {
   // Bound each step to preserve stage ordering after a suspended browser frame.
   const dt = Math.min(action.seconds, 0.25) * g.speed;
   g.time += dt;
+  for (const [id, trip] of Object.entries(g.returning)) {
+    trip.left -= dt;
+    if (trip.left <= 0) delete g.returning[id];
+  }
+  g.departures = g.departures
+    .map((d) => ({ ...d, left: d.left - dt }))
+    .filter((d) => d.left > 0);
+  const ownerAway =
+    !!g.returning.player || g.seats.some((s) => s?.worker === "player");
   g.arrival -= dt;
   g.payroll -= dt;
   if (g.payroll <= 0) {
@@ -220,6 +247,8 @@ export function update(game: Game, action: Action): Game {
   }
   g.seats.forEach((guest, index) => {
     if (!guest || ["ordered", "ready"].includes(guest.stage)) return;
+    if (guest.stage === "cooking" && guest.worker === "owner" && ownerAway)
+      return;
     guest.left -= dt;
     if (guest.left > 0) return;
     switch (guest.stage) {
@@ -230,6 +259,12 @@ export function update(game: Game, action: Action): Game {
         transition(guest, "ready", 0);
         break;
       case "serving":
+        if (guest.worker)
+          g.returning[guest.worker] = {
+            seat: index,
+            left: guest.duration,
+            duration: guest.duration,
+          };
         transition(guest, "eating", 5);
         break;
       case "eating": {
@@ -237,6 +272,14 @@ export function update(game: Game, action: Action): Game {
         g.cash += price;
         g.earned += price;
         g.served++;
+        const duration = pathLength(guestRoute(index)) / 2.2;
+        g.departures.push({
+          seat: index,
+          id: guest.id,
+          dish: guest.dish,
+          left: duration,
+          duration,
+        });
         g.seats[index] = null;
         note(
           g,
@@ -255,8 +298,8 @@ export function update(game: Game, action: Action): Game {
       g.seats[seat] = {
         id: g.nextId++,
         stage: "arriving",
-        left: 1,
-        duration: 1,
+        left: pathLength(guestRoute(seat)) / 2.2,
+        duration: pathLength(guestRoute(seat)) / 2.2,
         dish: g.dish,
       };
     else {
@@ -269,7 +312,12 @@ export function update(game: Game, action: Action): Game {
     { id: "owner", role: "chef", speed: 6 },
   ];
   for (const worker of workers) {
-    if (g.seats.some((s) => s?.worker === worker.id)) continue;
+    if (
+      g.returning[worker.id] ||
+      (worker.id === "owner" && ownerAway) ||
+      g.seats.some((s) => s?.worker === worker.id)
+    )
+      continue;
     const guest = g.seats.find(
       (s) => s?.stage === (worker.role === "chef" ? "ordered" : "ready"),
     );
@@ -277,7 +325,9 @@ export function update(game: Game, action: Action): Game {
       transition(
         guest,
         worker.role === "chef" ? "cooking" : "serving",
-        worker.speed * (worker.role === "chef" ? dishes[guest.dish].time : 1),
+        worker.role === "chef"
+          ? worker.speed * dishes[guest.dish].time
+          : travelTime(g.seats.indexOf(guest), worker.id, worker.speed),
         worker.id,
       );
   }
@@ -331,6 +381,33 @@ export function readSave(raw: string | null): Game | null {
       ![1, 2].includes(g.speed)
     )
       return null;
+    // Earlier draft saves did not contain travel. Keep their economy and orders.
+    g.returning ??= {};
+    g.departures ??= [];
+    const tripValid = (t: ReturnTrip) =>
+      !!t &&
+      Number.isInteger(t.seat) &&
+      finite(t.seat, 0, g.seats.length - 1) &&
+      finite(t.left, 0, 30) &&
+      finite(t.duration, 0.01, 30) &&
+      t.left <= t.duration;
+    if (
+      typeof g.returning !== "object" ||
+      Array.isArray(g.returning) ||
+      Object.entries(g.returning).some(
+        ([id, t]) => !["player", ...g.staff].includes(id) || !tripValid(t),
+      ) ||
+      !Array.isArray(g.departures) ||
+      g.departures.length > 16 ||
+      g.departures.some(
+        (d) =>
+          !tripValid(d) ||
+          !Number.isInteger(d.id) ||
+          !finite(d.id, 1, g.nextId - 1) ||
+          !dishes[d.dish],
+      )
+    )
+      return null;
     const ids = new Set<number>();
     const workers = new Set<string>();
     for (const s of g.seats) {
@@ -360,7 +437,16 @@ export function readSave(raw: string | null): Game | null {
         if (
           !["cooking", "serving"].includes(s.stage) ||
           !["owner", "player", ...g.staff].includes(s.worker) ||
-          (s.worker !== "player" && workers.has(s.worker))
+          workers.has(s.worker) ||
+          (s.stage === "cooking" &&
+            s.worker !== "owner" &&
+            !candidates.some((p) => p.id === s.worker && p.role === "chef")) ||
+          (s.stage === "serving" &&
+            s.worker !== "player" &&
+            !candidates.some(
+              (p) => p.id === s.worker && p.role === "waiter",
+            )) ||
+          (s.stage === "serving" && !!g.returning[s.worker])
         )
           return null;
         workers.add(s.worker);

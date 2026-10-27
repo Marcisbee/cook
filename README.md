@@ -1,17 +1,19 @@
 # Cook
 
-A small, browser-based restaurant management game, grown from the original Cook prototype.
+A playable isometric restaurant-management game, grown from the original Cook prototype.
 
-Name your restaurant and owner, cook for arriving guests, and serve ready meals to earn money. Expand to eight seats, hire a chef and two waiters, and buy publicity to attract more guests. Unlock dishes after 15 and 50 happy guests. Complete the growth milestones or keep running your restaurant for as long as you like.
+Name your restaurant, feed your neighbors, build out the dining room, and hire a kitchen crew. The full-screen Canvas 2D world uses shaded isometric geometry, depth-sorted characters, directional walk cycles, cooking and eating animation, steam, and meal delivery. Customers and staff follow routes around tables and the kitchen counter.
 
 ## Play
 
-- The owner cooks automatically and never charges wages. Press **Serve a meal** to deliver food, or hire a waiter to do it for you.
-- Guests pay after eating. Dish income is net of ingredients. Additional staff charge the displayed hiring fee and wages every game minute; unpaid staff leave. Manual service always remains available.
-- Seat and publicity purchases are permanent. A full dining room turns away new arrivals. More publicity increases arrivals; it does not speed up cooking.
-- Pause freezes service and wages. The 2× control speeds both up. Hidden tabs rest without offline earnings or wage charges.
-- Progress saves every two seconds and when leaving the game. **Menu** returns to the title screen. Starting a new restaurant requires explicitly opening it after a replacement warning.
-- Saves belong to this browser and device. Private browsing, storage restrictions, or clearing site data may prevent retention. The game shows a warning when saving fails.
+- The owner cooks automatically. Click a ready table, press **Serve a meal**, or use **Space** to deliver an order. The owner walks it to the guest and returns to the stove; their cooking pauses during that trip.
+- Hire a waiter to deliver orders automatically. Each delivery includes the walk out and back. Hire an extra chef to keep cooking while you serve.
+- Guests pay after eating and then walk out. An empty till never prevents manual service. Hired staff charge the displayed fee and wages every game minute; unpaid staff leave.
+- Use **Build** for additional tables and publicity, **Team** for staff, and **Menu** for dishes. Grow to eight seats, unlock dishes after 15 and 50 happy guests, and reach popularity level five.
+- Drag to pan; pinch, scroll, or use the camera buttons to zoom. Reset the camera with the percentage button. Click a table to inspect it or an empty footprint to open Build. All management actions also have ordinary keyboard-accessible buttons.
+- **P** pauses. The **2×** control speeds up both service and wages. Hidden tabs rest without offline income or wage charges.
+- Progress saves in this browser every two seconds and when leaving the game, including active orders and return trips. **Menu** in the top-right returns to the title screen. Starting a new restaurant explicitly replaces existing progress after a warning.
+- Private browsing, storage restrictions, or clearing site data may prevent retention. The game displays a warning when saving fails. Reduced-motion preferences disable decorative bobbing and limb cycles while keeping necessary travel visible.
 
 ## Run locally
 
@@ -19,10 +21,10 @@ Use Node.js 22.12+ (or a supported newer release).
 
 ```sh
 npm ci
-npm run dev -- --host 127.0.0.1 --port 5188 --strictPort
+npm run dev -- --host 127.0.0.1 --port 5189 --strictPort
 ```
 
-Open `http://127.0.0.1:5188`. No backend, accounts, API keys, or network services are needed to play.
+Open `http://127.0.0.1:5189`. No backend, accounts, API keys, or remote assets are needed to play.
 
 ```sh
 npm run check
@@ -32,8 +34,13 @@ npm run test:e2e
 npm run build
 ```
 
-The production build is in `dist/` and can be hosted on a static web server. `npm run serve -- --host 127.0.0.1` previews that build locally.
+Playwright starts its own server on port 5188. The production build is in `dist/` and can be hosted on a static web server. `npm run serve -- --host 127.0.0.1` previews that build locally.
 
 ## Structure
 
-`src/game.ts` owns the simulation and validates saved progress. `src/main.tsx` renders the game and manages the browser clock and storage. Model tests exercise the economy, progression, dismissal recovery and save boundaries; Playwright tests exercise the real browser loop and mobile controls.
+- `src/game.ts`: simulation, economy, staff, travel timing and save validation.
+- `src/world.ts`: floor layout and shared routes used by the simulation and renderer.
+- `src/RestaurantCanvas.tsx`: isometric geometry, animated characters, depth sorting, camera and hit testing.
+- `src/main.tsx`: game HUD, management controls, browser clock and local saves.
+
+Simulation tests cover progression, purchase constraints, staff dismissal, wages, saves and delivery round trips. Browser tests cover the actual gameplay loop, mobile controls, canvas interaction, animation, zoom and pause.

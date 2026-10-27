@@ -115,3 +115,65 @@ test("invalid saves cannot introduce broken orders or invalid balances", () => {
     assert.equal(readSave(raw), null);
   }
 });
+
+test("a selected table receives the delivery and the owner cannot serve again during the round trip", () => {
+  let g = update(newGame("Test", "Owner"), { type: "seat" });
+  g = run(g, 40, false);
+  assert.equal(g.seats[0]?.stage, "ready");
+  assert.equal(g.seats[1]?.stage, "ready");
+  g = update(g, { type: "serve", seat: 1 });
+  assert.equal(g.seats[1]?.stage, "serving");
+  assert.equal(g.seats[0]?.stage, "ready");
+  g = update(g, { type: "serve", seat: 0 });
+  assert.equal(
+    g.seats[0]?.stage,
+    "ready",
+    "one owner cannot make two deliveries at once",
+  );
+  assert.equal(g.served, 0);
+  g = run(g, 1, false);
+  assert.equal(
+    g.served,
+    0,
+    "walking food over does not credit an uneaten meal",
+  );
+  for (let i = 0; i < 200 && !g.returning.player; i++)
+    g = update(g, { type: "tick", seconds: 0.1 });
+  assert.ok(g.returning.player, "owner must walk back after delivering");
+  assert.equal(g.seats[1]?.stage, "eating");
+  const saved = readSave(JSON.stringify(g));
+  assert.deepEqual(
+    saved?.returning,
+    g.returning,
+    "the return trip survives saving",
+  );
+  g = saved!;
+  g = update(g, { type: "pause" });
+  assert.deepEqual(run(g, 30, false), g);
+  g = run(update(g, { type: "pause" }), 30, false);
+  assert.ok(!g.returning.player);
+  assert.ok(g.served > 0);
+  g = update(g, { type: "serve", seat: 0 });
+  assert.equal(g.seats[0]?.stage, "serving");
+});
+
+test("the owner pauses cooking to deliver food and resumes it after returning", () => {
+  let g = update(newGame("Test", "Owner"), { type: "seat" });
+  for (let i = 0; i < 500; i++) {
+    g = update(g, { type: "tick", seconds: 0.1 });
+    if (
+      g.seats.some((s) => s?.stage === "ready") &&
+      g.seats.some((s) => s?.worker === "owner")
+    )
+      break;
+  }
+  const cooking = g.seats.findIndex((s) => s?.worker === "owner");
+  assert.ok(cooking >= 0);
+  const left = g.seats[cooking]!.left;
+  g = update(g, { type: "serve" });
+  assert.ok(g.seats.some((s) => s?.worker === "player"));
+  g = run(g, 1, false);
+  assert.equal(g.seats[cooking]!.left, left);
+  g = run(g, 20, false);
+  assert.notEqual(g.seats[cooking]?.stage, "cooking");
+});

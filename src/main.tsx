@@ -34,15 +34,18 @@ function App() {
   const dispatch = (a: Action) => setGame((g) => (g ? update(g, a) : g));
   useEffect(() => {
     let last = performance.now();
-    const timer = setInterval(() => {
+    let timer = 0;
+    const frame = () => {
       const now = performance.now();
       if (!document.hidden)
         setGame((g) =>
           g ? update(g, { type: "tick", seconds: (now - last) / 1000 }) : g,
         );
       last = now;
-    }, 50);
-    return () => clearInterval(timer);
+      timer = requestAnimationFrame(frame);
+    };
+    timer = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(timer);
   }, []);
   const latest = useRef(game);
   latest.current = game;

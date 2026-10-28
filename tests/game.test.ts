@@ -175,3 +175,32 @@ test("busy waiter keeps deliveries queued; dismissing the last waiter restores o
   g = until(g, (g) => g.served === 2);
   assert.equal(g.served, 2);
 });
+
+test("each delivery is collected beside its own prepared dish", () => {
+  let g = newGame("Pickup", "Cook");
+  g.cash = 10000;
+  for (let i = 0; i < 7; i++) g = update(g, { type: "seat" });
+  g = update(g, { type: "hire", id: "luna" });
+  g = until(
+    g,
+    (g) =>
+      g.seats.every((s) => s?.stage === "ready") &&
+      g.actors.luna.phase === "idle",
+  );
+  for (const seat of [0, 4, 7]) {
+    g = update(g, { type: "serve", seat });
+    g = until(
+      g,
+      (g) =>
+        g.actors.luna.phase === "collect" && g.actors.luna.job?.seat === seat,
+    );
+    const resumed = readSave(JSON.stringify(g));
+    assert.ok(resumed);
+    assert.equal(resumed.actors.luna.phase, "collect");
+    g = resumed;
+    g = until(g, (g) => g.seats[seat]?.stage === "serving");
+    assert.equal(g.actors.luna.pos.x, seat < 4 ? 6 : 9);
+    assert.equal(g.actors.luna.pos.y, seat < 4 ? seat + 1 : seat - 1);
+    g = until(g, (g) => g.actors.luna.phase === "idle");
+  }
+});

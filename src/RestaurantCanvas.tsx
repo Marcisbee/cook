@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Game, Action, isQueued } from "./game";
-import {
-  Point,
-  tables,
-  along,
-  guestRoute,
-  chefSpot,
-  secondChefSpot,
-} from "./world";
+import { Point, tables, along, guestRoute, cookSpot, foodSpot } from "./world";
 import { artReady, Art, drawSprite } from "./art";
 const W = 800,
   H = 520;
@@ -16,7 +9,7 @@ export const project = (p: Point) => ({
   y: 116 + (p.x + p.y) * 15,
 });
 export const platePoint = (seat: number) => {
-  const p = project(seat < 4 ? { x: 7, y: seat + 1 } : { x: seat + 4, y: 0 });
+  const p = project(foodSpot(seat));
   return { x: p.x, y: p.y - 27 };
 };
 type Props = { game: Game; dispatch: (a: Action) => void };
@@ -338,37 +331,110 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       id: number,
       role: "chef" | "waiter" | "guest",
       moving: boolean,
-      carry = false,
-      working = false,
+      action?: "cook" | "order" | "clean" | "eat" | "choose",
       seated = false,
+      target?: Point,
     ) => {
       if (!art) return;
-      const q = project(p),
-        direction = p as Point & { dx?: number; dy?: number };
-      const back =
-        role === "chef" && ((direction.dx ?? 0) < 0 || (direction.dy ?? 0) < 0);
-      const row = role === "chef" ? (back ? 1 : 0) : role === "guest" ? 2 : 3;
-      const frame = moving && !reduced ? Math.floor(game.time * 8 + id) % 4 : 1;
-      diamond(p, 0.45, 0.35, "#57452e25");
-      const flip =
-        !back && ((direction.dx ?? 0) < 0 || (direction.dy ?? 0) > 0);
-      drawSprite(
-        ctx,
+      const q = project(p);
+      const direction = target
+        ? { dx: target.x - p.x, dy: target.y - p.y }
+        : (p as Point & { dx?: number; dy?: number });
+      const dx = direction.dx ?? 1,
+        dy = direction.dy ?? 0;
+      const back = dx < 0 || dy < 0;
+      // NW is the authored rear view; mirror it for NE. Front views face SE.
+      let flip = back ? dy < 0 : dy > 0;
+      const frame =
+        !reduced &&
+        (moving ||
+          action === "cook" ||
+          action === "eat" ||
+          (role === "waiter" && action))
+          ? Math.floor(
+              game.time * (moving ? 8 : action === "eat" ? 3 : 6) + id,
+            ) % 4
+          : 1;
+      let sprite =
         role === "guest"
           ? art.diners[(id % 4) * 4 + frame]
-          : art.characters[row * 4 + frame],
-        q.x,
-        q.y,
-        role === "chef" ? 52 : seated ? 37 : 48,
+          : role === "chef"
+            ? art.characters[(back ? 4 : 0) + frame]
+            : back
+              ? art.actions[4 + frame]
+              : art.characters[12 + frame];
+      if (role === "guest" && back && !seated) {
+        sprite = art.dinerActions[(id % 4) * 4 + frame];
+        flip = dx < 0; // This atlas's rear views are authored facing NE.
+      }
+      if (role === "guest" && seated) {
+        sprite =
+          art.dinerActions[16 + (id % 4) * 4 + (action === "eat" ? frame : 0)];
+        flip = false;
+      }
+      if (action === "cook") {
+        sprite = art.actions[frame];
+        flip = false;
+      }
+      if (role === "waiter" && action === "clean")
+        sprite = art.actions[8 + frame];
+      if (role === "waiter" && action === "order")
+        sprite = art.actions[12 + frame];
+      diamond(p, 0.45, 0.35, "#57452e25");
+      const breath =
+        !reduced && !moving && !action
+          ? Math.sin(game.time * 2 + id) * 0.35
+          : 0;
+      ctx.save();
+      const lean =
+        !reduced &&
+        role === "chef" &&
+        (action === "clean" || action === "order")
+          ? Math.sin(game.time * 8) * 0.035
+          : 0;
+      ctx.translate(q.x, q.y);
+      ctx.rotate(lean);
+      drawSprite(
+        ctx,
+        sprite,
+        0,
+        breath,
+        role === "chef" ? 70 : seated ? 48 : 60,
         flip,
       );
-      if (carry) {
-        const side = flip ? -1 : 1;
-        drawSprite(ctx, art.props[10], q.x + side * 13, q.y - 17, 11);
+      ctx.restore();
+      if (
+        role === "chef" &&
+        (action === "clean" || action === "order") &&
+        target
+      ) {
+        const t = project(target),
+          sweep = reduced ? 0 : Math.sin(game.time * 9) * 5;
+        if (action === "clean") {
+          poly(
+            [
+              [t.x - 8 + sweep, t.y - 24],
+              [t.x + sweep, t.y - 28],
+              [t.x + 9 + sweep, t.y - 24],
+              [t.x + sweep, t.y - 20],
+            ],
+            "#fff1ce",
+          );
+        } else {
+          rect(q.x - 16, q.y - 29, 9, 11, "#f8ebca");
+          rect(q.x - 15, q.y - 26 + sweep * 0.2, 7, 1, "#72583c");
+        }
       }
-      if (working && !reduced) {
-        const swing = Math.sin(game.time * 12) * 2;
-        rect(q.x + 12, q.y - 19 + swing, 5, 2, "#e9cf9b");
+      if (action === "choose") {
+        const tilt = reduced ? 0 : Math.sin(game.time * 2 + id) * 0.06;
+        ctx.save();
+        ctx.translate(q.x + 9, q.y - 19);
+        ctx.rotate(0.45 + tilt);
+        rect(-6, -5, 12, 10, "#f8ebca");
+        rect(-5, -4, 4, 7, "#8b9d6e");
+        rect(1, -3, 4, 1, "#96744e");
+        rect(1, 0, 4, 1, "#96744e");
+        ctx.restore();
       }
     };
     // Landscape is scenery only, outside the navigable floor.
@@ -386,15 +452,19 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     for (let x = 8; x < 12; x++)
       add({ x, y: 0 }, () => {
         prop(
-          x === 11 ? 5 : x === 10 ? 4 : 2,
+          x === 11 ? 5 : 2,
           { x, y: 0 },
           x === 11 ? 76 : 52,
           15,
-          58,
+          x === 11 ? 58 : 48,
         );
       });
     for (let y = 0; y < 5; y++)
       add({ x: 7, y }, () => prop(6, { x: 7, y }, 43, 15, 58));
+    for (let seat = 4; seat < game.seats.length; seat++) {
+      const p = foodSpot(seat);
+      add(p, () => prop(6, p, 43, 15, 58));
+    }
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 34));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.
     tables.forEach((p, i) => {
@@ -411,9 +481,13 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
               s.id,
               "guest",
               false,
-              false,
-              s.stage === "eating",
+              s.stage === "eating"
+                ? "eat"
+                : s.stage === "choosing"
+                  ? "choose"
+                  : undefined,
               true,
+              p,
             ),
           0.05,
         );
@@ -421,13 +495,25 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         prop(0, p, 43, 15, 60);
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
-        if (s?.stage === "eating" || s?.stage === "dirty")
+        if (s?.stage === "eating" || s?.stage === "dirty") {
+          const cleaner = Object.values(game.actors).find(
+            (a) =>
+              a.phase === "work" && a.job?.kind === "clean" && a.job.seat === i,
+          );
+          ctx.save();
+          if (cleaner && !reduced)
+            ctx.globalAlpha = Math.min(
+              1,
+              (cleaner.left / cleaner.duration) * 2,
+            );
           prop(
             s.stage === "dirty" ? 11 : 10,
             p,
             s.stage === "dirty" ? 14 : 12,
             -21,
           );
+          ctx.restore();
+        }
       });
       if (s?.stage === "arriving") {
         const p = along(guestRoute(i), 1 - s.left / s.duration);
@@ -441,36 +527,83 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       );
       add(p, () => person(p, d.id, "guest", true));
     });
-    Object.entries(game.actors).forEach(([id, a], i) =>
-      add(a.pos, () =>
+    Object.entries(game.actors).forEach(([id, a], i) => {
+      const cooking =
+        id === "owner" && game.seats.some((s) => s?.worker === "owner");
+      const working = a.phase === "work";
+      const collecting = a.phase === "collect";
+      const target =
+        id === "owner" && a.phase === "idle"
+          ? { x: a.pos.x, y: 0 }
+          : working && a.job
+            ? tables[a.job.seat]
+            : collecting && a.job
+              ? foodSpot(a.job.seat)
+              : undefined;
+      add(a.pos, () => {
         person(
           a.pos,
           i,
           id === "owner" ? "chef" : "waiter",
-          !["idle", "work"].includes(a.phase),
-          a.job?.kind === "serve" && a.phase !== "pickup",
-          a.phase === "work" ||
-            (id === "owner" && game.seats.some((s) => s?.worker === "owner")),
-        ),
-      ),
-    );
+          !["idle", "work", "collect"].includes(a.phase),
+          cooking
+            ? "cook"
+            : working && a.job?.kind !== "serve"
+              ? a.job?.kind
+              : undefined,
+          false,
+          target,
+        );
+        if (
+          art &&
+          a.job?.kind === "serve" &&
+          ["walk", "work", "collect"].includes(a.phase)
+        ) {
+          const q = project(a.pos),
+            direction = a.pos as Point & { dx?: number; dy?: number };
+          const side =
+            (direction.dx ?? 0) < 0 || (direction.dy ?? 0) > 0 ? -1 : 1;
+          let x = q.x + side * 13,
+            y = q.y - 33;
+          const progress = reduced ? 1 : 1 - a.left / a.duration;
+          if (collecting) {
+            const source = platePoint(a.job.seat);
+            x = source.x + (x - source.x) * progress;
+            y =
+              source.y +
+              5 +
+              (y - source.y - 5) * progress -
+              Math.sin(progress * Math.PI) * 5;
+          } else if (working) {
+            const destination = project(tables[a.job.seat]);
+            x += (destination.x - x) * progress;
+            y += (destination.y - 21 - y) * progress;
+          }
+          drawSprite(ctx, art.props[10], x, y, 12);
+        }
+      });
+    });
     game.staff
       .filter((id) => ["rodrigo", "fernando"].includes(id))
-      .forEach((id, i) =>
-        add(secondChefSpot, () =>
-          person(
-            secondChefSpot,
-            i + 2,
-            "chef",
-            false,
-            false,
-            game.seats.some((s) => s?.worker === id),
-          ),
-        ),
-      );
+      .forEach((id, i) => {
+        const p = cookSpot(id),
+          cooking = game.seats.some((s) => s?.worker === id);
+        add(p, () =>
+          person(p, i + 2, "chef", false, cooking ? "cook" : undefined, false, {
+            x: p.x,
+            y: 0,
+          }),
+        );
+      });
     game.seats.forEach((s, i) => {
-      if (s?.stage !== "ready") return;
-      const location = i < 4 ? { x: 7, y: i + 1 } : { x: i + 4, y: 0 };
+      if (
+        s?.stage !== "ready" ||
+        Object.values(game.actors).some(
+          (a) => a.phase === "collect" && a.job?.seat === i,
+        )
+      )
+        return;
+      const location = foodSpot(i);
       add(
         location,
         () => {
@@ -548,7 +681,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     game.seats
       .filter((s) => s?.stage === "cooking")
       .forEach((s) => {
-        const p = project(s!.worker === "owner" ? chefSpot : secondChefSpot);
+        const p = project(cookSpot(s!.worker!));
         for (let i = 0; i < 3; i++) {
           const phase = ((reduced ? 0 : game.time * 8) + i * 7) % 22;
           rect(

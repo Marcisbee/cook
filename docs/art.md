@@ -1,11 +1,13 @@
 # Restaurant artwork
 
-The game bundles three transparent PNG atlases. No remote runtime assets are required.
+The game bundles five transparent PNG atlases. No remote runtime assets are required.
 
 | Asset | Grid | Contents |
 | --- | --- | --- |
 | `public/art/characters.png` | 4 × 4 | Chef front/back walks, customer walk, waiter walk |
 | `public/art/diners.png` | 4 × 4 | Four diners with four walk frames each |
+| `public/art/actions.png` | 4 × 4 | Stirring, rear waiter walk, wiping and writing |
+| `public/art/diner-actions.png` | 4 × 8 | Four rear diner walks and four seated eating cycles |
 | `public/art/restaurant.png` | 4 × 3 | Tables, chairs, appliances, counter, plants, tree, produce, prepared and dirty dishes |
 
 The built-in image-generation tool was used; no CLI/API fallback. Source alpha is preserved. `src/art.ts` uses explicit rectangles around complete silhouettes, including artwork crossing nominal grid boundaries. Character frames share a reference height per walk cycle and a body-based ground anchor. All sprite drawing uses a single uniform scale, including width-constrained furniture, so the source proportions are preserved. The original atlas is sampled directly. The renderer sizes its canvas backing store to the displayed size and device pixel ratio, then draws source sprites directly at that resolution with high-quality sampling. Shared logical floor coordinates keep camera movement and hit targets independent of display density. Furniture, people and dishes share depth ordering.
@@ -21,3 +23,18 @@ Create a professional pixel-art GAME PROP ATLAS on transparent background for a 
 ## Diner prompt
 
 Create a consistent 4 by 4 grid CHARACTER SPRITE SHEET, transparent background, 16 equal square cells. Cozy isometric restaurant game, elevated camera, facing southeast/front-right in all cells, detailed crisp pixel art, warm colors and dark colored outlines, appealing small RPG characters. Exactly 4 DISTINCT diner characters, one per row. Each row shows the SAME character in four walk cycle frames: left foot forward, contact/standing, right foot forward, contact/standing. Row1 cheerful elderly man, white mustache and short gray hair, mustard knit sweater, dark brown trousers. Row2 young dark-skinned woman, curly black hair bun, lavender blouse, cream trousers. Row3 young man with round glasses, brown hair, teal jacket and dark pants. Row4 stocky older woman, short blonde bob, burgundy cardigan and blue skirt. Consistent scale and pixel density, relatively large expressive head, natural faces, full body visible, feet same baseline in every cell. Each figure centered in its own cell, only 55% of cell width and 70% of cell height, plenty of TRANSPARENT padding at every edge, no overlapping adjacent cells, no objects, no shadows, no ground, no grid, no text. Handcrafted 32-bit cozy farming RPG asset quality, not a scene or mockup.
+
+## Worker action prompt
+
+Use case: identity-preserve. Reference image: existing restaurant game character atlas. Create a NEW transparent PNG animation atlas matching these exact chef and waiter identities, colors, detailed pixel-illustration style and 2:1 isometric camera. Exactly 4 columns by 4 rows, 16 complete separate full-body sprites with generous transparent gutters, no shadows, scenery or text. Every row is four sequential frames of a LOOP, identical scale and foot baseline within the row. Row 1: chef (white toque, green apron) faces northeast/back-right, actively stirring with a wooden spoon at waist height, arm visibly traces a circular stir across four frames, no stove or pot included. Row 2: waiter (dark curly hair, blue shirt, ochre apron) faces northwest/back-left, four clearly distinct walking strides, empty hands, no tray. Row 3: same waiter faces northwest/back-left, leaning forward wiping a tabletop at waist height with a cream cloth, broad visibly different arm sweep across four frames; no table included. Row 4: same waiter faces northwest/back-left, holding a little order notepad and writing, head nod and hand movement across four frames. Full silhouettes including shoes and all utensils, never cut off, limbs never cross neighboring cells. Preserve identity and proportions; fixed camera, no perspective changes between frames. True transparent background.
+
+## Diner action prompt
+
+Use case: identity-preserve. Create a new transparent PNG sprite atlas using the attached four restaurant diners as identity/style reference. Exactly four columns and eight rows, 32 separated full-body figures, generous transparent margins and gutters. Detailed cozy pixel illustration matching reference, fixed 2:1 isometric view, same proportions, no text, no backgrounds, no furniture, no shadows. Rows 1-4 correspond to the four reference characters in order: gray moustache mustard sweater man; dark skin curly bun lavender blouse woman; glasses brown hair teal jacket man; blonde bob burgundy cardigan blue skirt woman. Each of these rows is a four-frame northwest/back-left walking loop, alternating legs and arm swing; show backs, not faces. Rows 5-8 repeat those same identities, this time SE/front-right facing, seated with knees bent, feet lower than hips (no chair drawn). Each row is a four-frame eating loop: reach forward with spoon, lift spoon, mouth bite with head nod, lower spoon. No bowl or table drawn. Complete silhouettes, consistent foot baseline and scale in each row, transparent gutters between every frame. Pose changes must be visible while identities and viewing angle remain fixed. True alpha transparency.
+
+
+## Diner spacing correction
+
+Edit this sprite atlas only to add generous transparent gutters between every sprite. Keep all 32 poses, exact identity, colors and style unchanged. Four columns eight rows. Each sprite must be wholly separated from every neighboring sprite by at least 24 transparent pixels. In particular row 7 column 3 and row 8 column 3 currently touch and must be separated. Preserve full anatomy including feet, spoons and hair. Transparent background. No new drawing or text. Fit all complete sprites with margin around the image.
+
+Action frames use explicit silhouette bounds, shared row scales and body anchors. The generated diner rear views face northeast (despite the requested northwest); the renderer mirrors them accordingly. The waiter rear view faces northwest. Eating frames share the chair's ground anchor. Cooking, collection, placement and cleanup follow actual simulation phases, including pause and speed. Reduced motion holds action poses and suppresses decorative sway while retaining essential travel.

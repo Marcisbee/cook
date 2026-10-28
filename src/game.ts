@@ -6,6 +6,7 @@ import {
   door,
   chefSpot,
   pass,
+  pickupSpot,
   tables,
   guestRoute,
 } from "./world";
@@ -107,7 +108,7 @@ export type Actor = {
   path: Point[];
   left: number;
   duration: number;
-  phase: "idle" | "walk" | "work" | "pickup" | "home";
+  phase: "idle" | "walk" | "work" | "collect" | "pickup" | "home";
   job?: Job;
 };
 export type Departure = {
@@ -318,13 +319,17 @@ export function update(game: Game, action: Action): Game {
     .filter((d) => d.left > 0);
   // A worker carries one job from pickup through delivery, then returns home.
   for (const [id, a] of Object.entries(g.actors)) {
-    if (a.phase === "idle") continue;
+    if (a.phase === "idle") {
+      if (id === "owner") a.pos = { ...chefSpot };
+      continue;
+    }
     const speed =
       id === "owner"
         ? 3.5
         : 5 / (candidates.find((p) => p.id === id)?.speed || 1);
     a.left = Math.max(0, a.left - dt);
-    if (a.phase !== "work") a.pos = along(a.path, 1 - a.left / a.duration);
+    if (a.phase !== "work" && a.phase !== "collect")
+      a.pos = along(a.path, 1 - a.left / a.duration);
     if (a.left > 0) continue;
     if (a.phase === "home") {
       a.phase = "idle";
@@ -338,6 +343,11 @@ export function update(game: Game, action: Action): Game {
       continue;
     }
     if (a.phase === "pickup") {
+      a.phase = "collect";
+      a.duration = a.left = 0.45;
+      continue;
+    }
+    if (a.phase === "collect") {
       transition(s, "serving");
       travel(
         a,
@@ -423,7 +433,7 @@ export function update(game: Game, action: Action): Game {
     travel(
       a,
       j.kind === "serve"
-        ? pass
+        ? pickupSpot(j.seat)
         : { x: tables[j.seat].x + 1, y: tables[j.seat].y },
       j.kind === "serve" ? "pickup" : "walk",
       id === "owner"
@@ -630,7 +640,7 @@ export function readSave(raw: string | null): Game | null {
         !finite(a.left, 0, 60) ||
         !finite(a.duration, 0, 60) ||
         a.left > a.duration ||
-        !["idle", "walk", "work", "pickup", "home"].includes(a.phase)
+        !["idle", "walk", "work", "collect", "pickup", "home"].includes(a.phase)
       )
         return null;
       if (a.job) {

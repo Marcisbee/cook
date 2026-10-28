@@ -10,12 +10,23 @@ export const tables: Point[] = [
   { x: 5, y: 8 },
 ];
 export const door = { x: 1, y: 10.5 };
-export const chefSpot = { x: 9, y: 1.2 };
-export const secondChefSpot = { x: 10.5, y: 1.2 };
-export const pass = { x: 8, y: 5 };
+export const chefSpot = { x: 9, y: 0.6 };
+export const secondChefSpot = { x: 8, y: 0.6 };
+export const cookSpot = (id: string): Point =>
+  id === "owner"
+    ? chefSpot
+    : id === "rodrigo"
+      ? secondChefSpot
+      : { x: 10, y: 0.6 };
+export const foodSpot = (seat: number): Point =>
+  seat < 4 ? { x: 7, y: seat + 1 } : { x: 10, y: seat - 1 };
+export const pickupSpot = (seat: number): Point =>
+  seat < 4 ? { x: 6, y: seat + 1 } : { x: 9, y: seat - 1 };
+export const pass = { x: 6, y: 5 };
 const blocked = (x: number, y: number) =>
   tables.some((t) => (t.x === x || t.x - 1 === x) && t.y === y) ||
   (x === 7 && y < 5) ||
+  (x === 10 && y >= 3 && y <= 6) ||
   (x >= 8 && y === 0);
 
 // Routes use the same floor collision map for simulation timing and rendering.

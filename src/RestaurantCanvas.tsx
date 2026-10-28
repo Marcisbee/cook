@@ -12,6 +12,7 @@ import {
 import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawWalk } from "./walk";
+import { drawIdle } from "./idle";
 const W = 800,
   H = 520;
 export const project = (p: Point) => ({
@@ -389,10 +390,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       if (role === "waiter" && action === "order")
         sprite = art.actions[12 + frame];
       diamond(p, 0.45, 0.35, "#57452e25");
-      const breath =
-        !reduced && !moving && !action
-          ? Math.sin(game.time * 2 + id) * 0.35
-          : 0;
       ctx.save();
       const lean =
         !reduced &&
@@ -420,12 +417,22 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           pants,
           role === "guest" && id % 4 === 3,
         );
+      } else if (!moving && !action && !reduced) {
+        drawIdle(
+          ctx,
+          sprite,
+          role === "chef" ? 70 : seated ? 48 : 60,
+          flip,
+          game.time,
+          id + (role === "chef" ? 7 : role === "waiter" ? 13 : 0),
+          seated,
+        );
       } else
         drawSprite(
           ctx,
           sprite,
           0,
-          breath,
+          0,
           role === "chef" ? 70 : seated ? 48 : 60,
           flip,
         );

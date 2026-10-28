@@ -205,3 +205,47 @@ test("atlas rectangles retain complete character and furniture silhouettes", asy
   });
   expect(clipped).toEqual([]);
 });
+
+test("idle characters breathe without moving planted feet and respect reduced motion", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await start(page);
+  await expect(page.getByText("Setting the tables…")).not.toBeVisible();
+  const crop = (part: "body" | "feet") =>
+    page.locator("canvas").evaluate((canvas: HTMLCanvasElement, part) => {
+      // Owner's stove position in the displayed restaurant, sampled at output resolution.
+      const box =
+        part === "feet"
+          ? { x: 642, y: 254, w: 20, h: 8 }
+          : { x: 637, y: 190, w: 35, h: 45 };
+      const c = document.createElement("canvas"),
+        sx = canvas.width / 800,
+        sy = canvas.height / 520;
+      c.width = Math.round(box.w * sx);
+      c.height = Math.round(box.h * sy);
+      c.getContext("2d")!.drawImage(
+        canvas,
+        Math.round(box.x * sx),
+        Math.round(box.y * sy),
+        c.width,
+        c.height,
+        0,
+        0,
+        c.width,
+        c.height,
+      );
+      return c.toDataURL();
+    }, part);
+  await page.clock.runFor(100);
+  const feet = await crop("feet"),
+    body = await crop("body");
+  await page.clock.runFor(900);
+  expect(await crop("feet")).toBe(feet);
+  expect(await crop("body")).not.toBe(body);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.clock.runFor(100);
+  const still = await crop("body");
+  await page.clock.runFor(1000);
+  expect(await crop("body")).toBe(still);
+});

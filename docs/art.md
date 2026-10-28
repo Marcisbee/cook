@@ -44,3 +44,7 @@ Action frames use explicit silhouette bounds, shared row scales and body anchors
 Tables, dining chairs and service counters are drawn by `src/furniture.ts` using the same 2:1 world projection as navigation. Chair backs occupy the negative-X side, leaving the positive-X side facing the table. Counter tops and cabinet faces share the floor axes, including the second pickup counter.
 
 Walking uses `src/walk.ts`: a registered torso pose over two articulated legs. Alternating contact and swing phases are driven by route distance; stance feet move backward relative to the pelvis at travel speed, while swing feet lift and advance. Source walk frames are retained for stationary poses; repeated same-leg atlas frames no longer drive locomotion. Action atlases still drive service and eating.
+
+## Idle motion
+
+`src/idle.ts` animates registered staff and seated diner poses with breathing, weight shifts and occasional settling. The deformation fades to zero below the pelvis, keeping feet and chair contact fixed. Character-specific phase offsets avoid synchronized movement. Game time drives motion, so pause and speed apply consistently; reduced-motion uses an undeformed static pose. Idle motion yields to walking and service animations.

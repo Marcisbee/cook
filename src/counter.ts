@@ -72,9 +72,9 @@ export function drawCounter(
     panel(true, -0.11, 0.22, 23, 1, "#d3b574");
     panel(true, 0.23, 0.065, 14, 2, "#4c3d2a");
     panel(true, 0.22, 0.06, 15, 1.5, "#d3b574");
-    // Thin continuous ivory worktop, a shaded lip and sparse stone flecks.
-    panel(true, -0.5, 1, 27, 3, "#b5a98c");
-    if (end) panel(false, -0.5, 1, 27, 3, "#d0c3a3");
+    // Thin continuous walnut worktop, a shaded lip and sparse stone flecks.
+    panel(true, -0.5, 1, 27, 3, "#725030");
+    if (end) panel(false, -0.5, 1, 27, 3, "#99703e");
     face(
       [
         at(-0.5, -0.5, 30),
@@ -82,7 +82,7 @@ export function drawCounter(
         at(0.5, 0.5, 30),
         at(-0.5, 0.5, 30),
       ],
-      "#e4dbc1",
+      "#b98a4e",
     );
     face(
       [
@@ -91,13 +91,13 @@ export function drawCounter(
         at(0.5, 0.5, 30),
         at(0.47, 0.5, 30),
       ],
-      "#f5ecd5",
+      "#ddbb78",
     );
     for (let i = 0; i < 18; i++) {
       const x = -0.42 + ((i * 17) % 81) / 100,
         y = -0.43 + ((i * 29) % 83) / 100;
       const q = at(x, y, 30);
-      c.fillStyle = i % 3 ? "#d9cfb6" : "#eee5ce";
+      c.fillStyle = i % 3 ? "#a77b43" : "#cda363";
       c.fillRect(
         Math.round(q.x * 2) / 2,
         Math.round(q.y * 2) / 2,

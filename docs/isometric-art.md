@@ -43,6 +43,14 @@ Cook retains its existing tile-based routes and collision rules. This round does
 
 ## Applied changes and verification
 
+### Architectural revision
+
+The assembled scene exposed two failures that coordinate tests alone did not catch: generated floor texture seams did not define a reliable board grid, and flat wall elevations lacked the visible depth of the reference. Floorboards now use staggered world-space rectangles; checker squares meet them at the same x=6.5 boundary. Board edges, grain and perimeter inlay project together. This applies Bellanger's map-to-screen construction to the actual visible seams, not just their containing tile.
+
+Wall caps and end returns now have greater thickness. Cornices, skirting, pilasters, cabinet backs and shelf sides are extruded along the wall normal, with separate front/top/return values and contact shadows. Cabinet elevations are displaced to their front plane. Dining windows and crockery shelves occupy timber bays; kitchen racks sit above cooking stations. Duplicate free-standing decorative posts were removed. These changes apply the cuboid construction described in [Pixelblog 41](https://www.slynyrd.com/blog/2022/11/28/pixelblog-41-isometric-pixel-art).
+
+The exterior vegetation now leaves more open snow between groups. This follows the texture/negative-space balance discussed in [Pixelblog 20](https://www.slynyrd.com/blog/2019/8/27/pixelblog-20-top-down-tiles). The retained sprite anchors follow the bottom-contact principle described by [Tiled's tile-object alignment](https://doc.mapeditor.org/en/stable/manual/objects/#insert-tile). The current restaurant remains a different layout from the reference; these construction changes do not establish exact artistic equivalence.
+
 - Shared projection and inverse projection now define elevated tabletop picking.
 - Floor-prop shadows follow their rectangular world footprints.
 - Tables, chairs, counters and fixtures provide their footprints to occlusion ordering.

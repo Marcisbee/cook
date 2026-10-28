@@ -2,7 +2,7 @@
 
 ## Dusk and winter reference revision
 
-The active environment uses golden timber, dark walnut, slate-violet outdoor stone and snow. Flat wall elevations are projected onto the room's existing wall planes. Snow-covered trees, shrubs and street lamps remain individually anchored tile props. The restaurant layout and characters remain distinct from the reference.
+The active environment uses golden timber, dark walnut, slate-violet outdoor stone and snow. Flat wall elevations are projected onto the room's existing wall planes. Snow-covered trees, shrubs and street lamps remain individually anchored tile props. The restaurant layout and characters remain distinct from the reference. A subsequent architectural revision replaces the indoor floor material with world-space staggered boards and checker tiles, and replaces textured wainscot with individually projected timber panels. Wall decorations now sit on extruded bodies with top/return faces. Counters use walnut worktops. The environmental atlas remains active outdoors and on plaster.
 
 ### environment-dusk.png
 

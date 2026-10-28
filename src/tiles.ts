@@ -27,26 +27,6 @@ export const fixtureTiles: TileProp[] = [
     solid: true,
   },
   {
-    x: 0,
-    y: 0,
-    atlas: "timber",
-    frame: 2,
-    width: 20,
-    ground: 0.96,
-    footprint: [0.5, 0.5],
-    solid: true,
-  },
-  {
-    x: 0,
-    y: 9,
-    atlas: "timber",
-    frame: 2,
-    width: 20,
-    ground: 0.96,
-    footprint: [0.5, 0.5],
-    solid: true,
-  },
-  {
     x: 7,
     y: 12,
     atlas: "timber",
@@ -81,6 +61,9 @@ for (let x = -12; x <= 24; x += 2)
     if (x >= -2 && x <= 14 && y >= -2 && y <= 14) continue;
     if (x >= 0 && x <= 2 && y > 9) continue;
     const n = Math.abs(x * 17 + y * 31);
+    // Cluster vegetation with clear snow between groups, rather than stamping
+    // an identical shrub into every other tile of the surrounding world.
+    if (n % 7 > 3) continue;
     const tree = n % 5 === 0;
     gardenTiles.push({
       x,

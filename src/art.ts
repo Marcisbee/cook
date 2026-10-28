@@ -232,7 +232,19 @@ function loadSheet(
   });
 }
 export const artReady = Promise.all([
-  loadSheet("/art/environment.png", [[0, 0, 1671, 940]]),
+  loadSheet("/art/environment-dusk.png", [[0, 0, 1773, 886]]),
+  loadSheet("/art/wall-decor.png", [
+    [182, 33, 586, 707],
+    [768, 84, 1140, 696],
+    [135, 783, 659, 1163],
+    [874, 818, 1048, 1140],
+  ]),
+  loadSheet("/art/winter-garden.png", [
+    [172, 67, 620, 534],
+    [901, 249, 1244, 519],
+    [181, 678, 644, 1026],
+    [1023, 659, 1155, 1017],
+  ]),
   loadSheet("/art/walk-chef.png", walkChefBounds, true, 8, true),
   loadSheet("/art/walk-waiter.png", walkWaiterBounds, true, 8, true),
   loadSheet("/art/walk-diners-a.png", walkDinersABounds, true, 8, true),
@@ -258,6 +270,8 @@ export const artReady = Promise.all([
 ]).then(
   ([
     environment,
+    wallDecor,
+    winterGarden,
     walkChef,
     walkWaiter,
     walkDinersA,
@@ -273,6 +287,8 @@ export const artReady = Promise.all([
     furnishings,
   ]) => ({
     environment,
+    wallDecor,
+    winterGarden,
     walkChef,
     walkWaiter,
     walkDinersA,

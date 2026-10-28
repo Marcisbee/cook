@@ -63,10 +63,18 @@ function paintInterior(
   }
   // Patterned entrance runner, kept clear of the service lanes.
   floor(-0.35, 7.3, 1.2, 2.1, "#b9a37b");
-  floor(-0.29, 7.36, 1.08, 1.98, "#3d5d52");
+  floor(-0.29, 7.36, 1.08, 1.98, "#7a293b");
   for (let y = 7.43; y < 9.3; y += 0.23) {
     floor(-0.23, y, 0.09, 0.09, "#b7a478");
     floor(0.62, y, 0.09, 0.09, "#b7a478");
+  }
+  // Burgundy service runner with woven gold borders, below all actors.
+  floor(8.05, 1.6, 1.3, 6.8, "#d4af6e");
+  floor(8.1, 1.65, 1.2, 6.7, "#653045");
+  floor(8.16, 1.71, 1.08, 6.58, "#9a3948");
+  for (let y = 1.85; y < 8.2; y += 0.25) {
+    floor(8.2, y, 0.045, 0.1, "#d0a36a");
+    floor(9.15, y, 0.045, 0.1, "#d0a36a");
   }
   // Wall solids use the same floor grid as their fixtures: inner face, cap,
   // and exposed end return. The two caps meet at one continuous corner.
@@ -96,7 +104,7 @@ function paintInterior(
         point(length, false, 90),
         point(-0.74, false, 90),
       ],
-      "#9b7851",
+      "#4b3329",
     );
     face(
       [
@@ -105,7 +113,7 @@ function paintInterior(
         point(length, true, 90),
         point(length, false, 90),
       ],
-      side ? "#896b49" : "#70583d",
+      side ? "#47352e" : "#352b2b",
     );
   }
   // Panels and mouldings on both back walls.
@@ -136,8 +144,8 @@ function paintInterior(
     panel(side, -0.5, length, 25, 2, "#8a7450");
     panel(side, -0.5, length, 29, 1, "#bda37b");
     panel(side, -0.5, length, 0, 4, "#293e37");
-    panel(side, -0.5, length, 86, 4, "#725437");
-    panel(side, -0.5, length, 84, 2, "#b49b70");
+    panel(side, -0.5, length, 86, 4, "#483125");
+    panel(side, -0.5, length, 84, 2, "#b28a4f");
     for (let t = -0.38; t < length - 0.5; t += 0.8) {
       panel(side, t, 0.65, 6, 15, "#29473f");
       panel(side, t + 0.04, 0.57, 7, 13, side ? "#426658" : "#4e7260");
@@ -162,65 +170,50 @@ function paintInterior(
       );
     }
   }
-  // Windows are built on the wall plane, with identical scale and depth.
-  // A front-facing image pasted onto a sloping wall cannot align its frame.
-  for (const t of [0.7, 3.7, 6.7]) {
-    panel(0, t, 1.85, 31, 49, "#755b3d");
-    panel(0, t + 0.08, 1.69, 32, 47, "#bfa77d");
-    panel(0, t + 0.17, 1.51, 34, 43, "#567b79");
-    for (let col = 0; col < 4; col++) {
-      for (let row = 0; row < 6; row++) {
-        panel(
-          0,
-          t + 0.22 + col * 0.36,
-          0.31,
-          35 + row * 6.8,
-          6.1,
-          ["#8caba0", "#a7bab0", "#738f8d", "#bac4ad"][(row + col * 3) % 4],
-        );
-      }
+  // Decorations are authored as front elevations, then projected once onto
+  // the wall; this avoids applying a second isometric angle to a sprite.
+  const decor = (
+    side: number,
+    t: number,
+    width: number,
+    z: number,
+    height: number,
+    index: number,
+  ) => {
+    if (!art) return;
+    const sprite = art.wallDecor[index];
+    const a = wall(side, t, z + height),
+      b = wall(side, t + width, z + height);
+    ctx.save();
+    ctx.transform(b.x - a.x, b.y - a.y, 0, height, a.x, a.y);
+    ctx.drawImage(
+      sprite.image,
+      sprite.x,
+      sprite.y,
+      sprite.w,
+      sprite.h,
+      0,
+      0,
+      1,
+      1,
+    );
+    ctx.restore();
+  };
+  for (const t of [0.5, 3.5, 6.5]) decor(0, t, 1.85, 29, 54, 1);
+  decor(1, 0.8, 2.1, 7, 76, 0);
+  decor(1, 3.2, 1.4, 34, 47, 1);
+  decor(1, 6.6, 1.9, 40, 40, 2);
+  decor(1, 9, 1.9, 40, 40, 2);
+  for (const side of [0, 1]) {
+    const positions = side ? [0.15, 5.8, 11.05] : [2.7, 5.7, 8.8];
+    for (const t of positions) {
+      decor(side, t, 0.35, 45, 24, 3);
+      const p = wall(side, t + 0.17, 56);
+      const glow = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 32);
+      glow.addColorStop(0, "#ffce6d32");
+      glow.addColorStop(1, "#ffce6d00");
+      ctx.fillStyle = glow;
+      ctx.fillRect(p.x - 32, p.y - 32, 64, 64);
     }
-    panel(0, t + 0.87, 0.09, 33, 45, "#d8c6a3");
-    panel(0, t - 0.08, 2.01, 30, 2.2, "#e0cba0");
-    panel(0, t - 0.06, 1.97, 80, 2, "#e0cba0");
-  }
-  // Chalkboard and its frame are drawn on the wall rather than importing an
-  // already-isometric sprite with a different vanishing direction.
-  panel(1, 2.5, 1.25, 36, 28, "#6f5035");
-  panel(1, 2.57, 1.11, 38, 24, "#293f36");
-  panel(1, 2.58, 1.09, 61, 1, "#b09465");
-  for (let i = 0; i < 5; i++) {
-    panel(1, 2.7, 0.7 - (i % 3) * 0.12, 56 - i * 3.5, 0.55, "#c2c8aa");
-    panel(1, 3.4, 0.12, 56 - i * 3.5, 0.55, "#c2c8aa");
-  }
-  // Shelves, crockery, framed menu and brass lamps on the kitchen wall.
-  for (const t of [6.9, 9.1]) {
-    panel(1, t, 1.7, 42, 35, "#81613f");
-    panel(1, t + 0.07, 1.56, 44, 31, "#533f30");
-    for (const z of [45, 59, 74]) panel(1, t, 1.7, z, 1.8, "#c09a64");
-    for (let j = 0; j < 5; j++)
-      for (const z of [47, 61]) {
-        panel(
-          1,
-          t + 0.13 + j * 0.29,
-          0.18,
-          z,
-          5 + (j % 2) * 2,
-          ["#c4c9ad", "#7e9b8e", "#bb8b65"][j % 3],
-        );
-        panel(1, t + 0.16 + j * 0.29, 0.035, z + 1, 4, "#e4dabd");
-      }
-  }
-  for (const t of [1, 5.7, 11]) {
-    const p = wall(1, t, 58);
-    panel(1, t - 0.035, 0.07, 47, 11, "#6c5037");
-    panel(1, t - 0.14, 0.28, 57, 2, "#aa8d54");
-    panel(1, t - 0.1, 0.2, 59, 9, "#e6d6ab");
-    panel(1, t - 0.015, 0.035, 60, 7, "#fff0ca");
-    const light = ctx.createRadialGradient(p.x, p.y - 5, 1, p.x, p.y - 5, 21);
-    light.addColorStop(0, "#f8d28a26");
-    light.addColorStop(1, "#f8d28a00");
-    ctx.fillStyle = light;
-    ctx.fillRect(p.x - 22, p.y - 27, 44, 44);
   }
 }

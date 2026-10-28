@@ -229,23 +229,25 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             kind === "grass" ? 4 : 2,
           );
         }
+      // Cooler exterior values leave the warm interior as the focal point.
+      rect(-1600, -1200, 4000, 3000, "#20213966");
       if (art)
         gardenTiles
           .filter((p) => p.x < 0 || p.y < 0)
           .sort((a, b) => a.x + a.y - b.x - b.y)
           .forEach((p) => drawTileProp(ctx, art, p));
       for (let x = 2; x < 12; x++) {
-        box({ x, y: 10.6 }, 0.98, 0.34, 8, "#c6b494", "#82775f", "#a09276");
-        box({ x, y: 10.6 }, 1.03, 0.42, 10, "#dfcba7", "#b3a07e", "#c5b28f");
+        box({ x, y: 10.6 }, 0.98, 0.34, 20, "#77768e", "#44445e", "#5b5c78");
+        box({ x, y: 10.6 }, 1.03, 0.42, 22, "#a7a5ba", "#5c5b77", "#72718a");
         const a = project({ x: x - 0.49, y: 10.77 }),
           b = project({ x: x + 0.49, y: 10.77 });
         material(
           ctx,
           art,
           6,
-          { x: a.x, y: a.y - 8 },
+          { x: a.x, y: a.y - 20 },
           { x: b.x - a.x, y: b.y - a.y },
-          { x: 0, y: 8 },
+          { x: 0, y: 20 },
         );
       }
       // A foundation, timber seams and planted borders make a place, not a floating grid.
@@ -294,7 +296,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-W / 2, -H / 2);
     const entry = project({ x: 1, y: 10 });
-    diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
+    diamond({ x: 1, y: 9 }, 1.6, 0.6, "#773747");
     text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
     const items: Drawable[] = [];
     const add = (

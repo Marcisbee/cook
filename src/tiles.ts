@@ -6,7 +6,7 @@ export { tileSize, project as tileToScreen } from "./isometric";
 export type TileProp = {
   x: number;
   y: number;
-  atlas: "timber" | "furnishings";
+  atlas: "timber" | "furnishings" | "winterGarden";
   frame: number;
   width: number;
   ground: number;
@@ -58,8 +58,8 @@ export const fixtureTiles: TileProp[] = [
   {
     x: -1,
     y: 11,
-    atlas: "furnishings",
-    frame: 7,
+    atlas: "winterGarden",
+    frame: 3,
     width: 20,
     ground: 0.98,
     footprint: [0.3, 0.3],
@@ -67,8 +67,8 @@ export const fixtureTiles: TileProp[] = [
   {
     x: 13,
     y: 3,
-    atlas: "furnishings",
-    frame: 7,
+    atlas: "winterGarden",
+    frame: 3,
     width: 20,
     ground: 0.98,
     footprint: [0.3, 0.3],
@@ -85,10 +85,10 @@ for (let x = -12; x <= 24; x += 2)
     gardenTiles.push({
       x,
       y,
-      atlas: "furnishings",
-      frame: tree ? 4 : n % 3 ? 5 : 6,
-      width: tree ? 110 : n % 3 ? 62 : 40,
-      ground: tree ? 0.97 : 0.82,
+      atlas: "winterGarden",
+      frame: tree ? 0 : 1,
+      width: tree ? 90 : 45,
+      ground: tree ? 0.97 : 0.84,
       footprint: tree ? [2, 2] : [1.4, 1.4],
     });
   }

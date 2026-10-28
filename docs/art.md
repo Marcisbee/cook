@@ -1,8 +1,29 @@
 # Restaurant artwork
 
+## Dusk and winter reference revision
+
+The active environment uses golden timber, dark walnut, slate-violet outdoor stone and snow. Flat wall elevations are projected onto the room's existing wall planes. Snow-covered trees, shrubs and street lamps remain individually anchored tile props. The restaurant layout and characters remain distinct from the reference.
+
+### environment-dusk.png
+
+Create an OPAQUE pixel-art game material atlas guided by this reference. EXACTLY FOUR COLUMNS TWO ROWS, eight equal rectangular swatches, no margins/gaps/text. Flat orthographic textures, NOT a scene, NOT isometric objects. Fine crisp handcrafted pixel clusters and restrained limited palettes like reference, no photorealistic noise. Row1: warm golden walnut floorboards, long broad staggered boards and sparse dark grain; dark desaturated blue-gray cobblestone paving with violet mortar; snowy garden ground with muted blue-gray snow and small exposed earth patches, quiet low contrast; worn slate-blue street flagstones. Row2: pale muted sage plaster with subtle patches (quiet, no cracks); rich DARK WALNUT raised-panel wood wainscot with warm ochre thin highlights (not green); dark blue-gray stone masonry blocks with slate violet shaded mortar; cream and muted slate teal ceramic checker floor four by four squares. Texture swatches fill exact equal grid. Each should tile seamlessly. Materials designed for warm indoor/cool outdoor dusk contrast. No vignette or lighting gradients. Take color and pixel-cluster treatment from reference.
+
+### wall-decor.png
+
+Create transparent pixel-art game decoration atlas, EXACTLY TWO COLUMNS TWO ROWS, four equally spaced complete isolated objects. Use reference for fine crisp limited-palette pixel art, rich dark walnut and gold trim, bottles, books, burgundy accents. Every object is a FLAT FRONT ELEVATION RECTANGLE with vertical sides and horizontal shelves: absolutely NO isometric angle, NO side faces, NO perspective. The game will project it onto isometric wall planes. Row1left: tall arched walnut recessed bookcase with rows of colorful potion bottles, books, crockery and small lower cabinet doors, brass pulls, detailed but clear pixels. Row1right: tall arched window with leaded pale blue diamond glass, thick walnut frame, burgundy curtain draped at top corners, golden fittings. Row2left: rectangular walnut kitchen wall rack holding brass pans, ceramic cups, spice jars and rolled towels, precise fine pixels. Row2right: tall narrow brass wall lantern with warm cream glowing glass, small metal wall bracket, no halo or backdrop. Objects fill at most 80percent their equal cell with generous transparent gutters and complete silhouettes. No text, no ground, no shadows, no background. Consistent pixel scale, bright accents only on brass and glass. Fine authored pixel art, no smooth vector gradients, no thick cartoon outlines.
+
+### winter-garden.png
+
+Transparent pixel-art game prop atlas EXACTLY 2 columns 2 rows, four separate complete objects, 2:1 isometric view, matching supplied reference's fine authored pixel clusters, limited muted dusk colors and gold light, not glossy illustration. Row1left: medium bare winter tree with dark violet-brown trunk and branches carrying small blue-gray snow clumps, tree sparse and readable, no ground. Row1right: low rounded dormant shrub with blue-gray snow on top and few dark desaturated leaves. Row2left: low straight rough slate-violet masonry garden wall module, snowy cream-blue coping, runs toward lower-right along 2:1 angle. Row2right: slender dark iron Victorian street lantern on square stone base, golden glowing glass, snow cap, no glow halo. Generous transparent gutters, objects never touch, consistent fine pixel scale, complete bases. No background, no labels, no ground tile, no text.
+
+Layout correction:
+
+Keep all four objects and their pixel art exactly the same, but correct the atlas layout into two rows with large empty horizontal gutters. The tree and stone wall currently overlap in vertical extent. Shrink and reposition each complete object into its own equal quadrant, with minimum 40px of transparent padding on every side of every quadrant. All tree pixels must end above the middle horizontal line minus40px; all wall pixels must start below middle horizontal line plus40px. Likewise each object's pixels fit its own column with40px margins. Preserve true alpha transparency, complete silhouettes, no text, no backdrop. Do not redesign any object.
+
+
 The visual direction follows the seven user-supplied isometric pixel-art references attached to the task on 2026-10-28: smaller adult-proportioned figures, warm timber, cream stone, forest-green upholstery and panelling, brass fixtures, detailed plants and restrained parchment UI. This replaces the previous large-headed illustration direction.
 
-Fourteen local PNG atlases in `public/art/` were created with the built-in image tool using the supplied references. No reference screenshot is used as a game background. The room is rendered by the restaurant simulation.
+Local PNG atlases in `public/art/` were created with the built-in image tool using the supplied references. No reference screenshot is used as a game background. The room is rendered by the restaurant simulation. The latest dusk reference revision below supersedes the original green garden palette and environmental atlas.
 
 ## Environmental materials
 

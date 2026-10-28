@@ -106,10 +106,7 @@ function App() {
   if (!game)
     return (
       <main className="welcome">
-        <div className="title-art" aria-hidden="true">
-          ▟ ▙<br />
-          ▜▄▛
-        </div>
+        <div className="title-art" aria-hidden="true" />
         <p className="eyebrow">A SMALL RESTAURANT. A BIG LITTLE DREAM.</p>
         <h1>Little Ladle</h1>
         <p>

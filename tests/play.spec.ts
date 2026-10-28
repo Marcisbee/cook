@@ -8,6 +8,7 @@ test("guests choose, order, receive a clicked dish, and leave a table to clean",
 }) => {
   await page.clock.install();
   await start(page);
+  await expect(page.getByText("Setting the tables…")).not.toBeVisible();
   await page.clock.runFor(9000);
   const order = page.getByRole("button", { name: "Order · 1", exact: true });
   await expect(order).toBeVisible();
@@ -20,11 +21,15 @@ test("guests choose, order, receive a clicked dish, and leave a table to clean",
   await page.keyboard.press("Space");
   await page.clock.runFor(1000);
   await expect(serve).toBeEnabled();
-  // Click the physical prepared meal on the canvas rather than its accessible shortcut.
+  // Camera transforms must preserve the physical dish target.
+  await page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Reset camera", exact: true }),
+  ).toHaveText("120%");
   const canvas = page.locator("canvas"),
     box = (await canvas.boundingBox())!;
   await canvas.click({
-    position: { x: (420 / 640) * box.width, y: (170 / 420) * box.height },
+    position: { x: (616 / 800) * box.width, y: (198.8 / 520) * box.height },
   });
   await expect(serve).not.toBeVisible();
   await page.clock.runFor(15000);

@@ -1,6 +1,6 @@
 # Cook
 
-A playable pixel-art restaurant game built around an isometric canvas world.
+A playable restaurant game built around an isometric canvas world, animated character sprite sheets and a detailed pixel-art furniture set.
 
 ## Play
 
@@ -10,7 +10,7 @@ A playable pixel-art restaurant game built around an isometric canvas world.
 4. Click the prepared dish on the kitchen counter or its **Food pass** button. An available worker picks it up and delivers it. Requests remain queued while workers are busy.
 5. Guests eat, pay and leave a dirty table. Click **CLEAN** before another guest can use it.
 
-Waiters take orders and clean automatically. Delivery still requires selecting a prepared meal. Table and food actions also have keyboard-accessible buttons below the canvas. **P** pauses; **Esc** closes a panel. Speed changes affect work and wages together.
+Waiters take orders and clean automatically. Delivery still requires selecting a prepared meal. Drag the world to pan, and use the camera buttons to zoom or reset. Table and food actions also have keyboard-accessible buttons below the canvas. **P** pauses; **Esc** closes a panel. Speed changes affect work and wages together.
 
 The compact **Shop** contains tables, publicity, staff, dishes and upgrades. QR menus bypass order-taking visits; a quick stove speeds cooking; a dishwasher speeds cleanup; a later dispatch bell automatically queues prepared dishes. Hire an extra chef to keep the kitchen running while the owner works the floor. Staff charge displayed wages each game minute and leave if unpaid. The owner remains available without money.
 
@@ -36,7 +36,8 @@ No backend, remote assets, accounts or API keys are required. Browser tests star
 
 - `src/game.ts`: service stages, FIFO worker jobs, economy, upgrades and save migration.
 - `src/world.ts`: floor geometry and shared collision-aware walking routes.
-- `src/RestaurantCanvas.tsx`: pixel sprites, isometric depth sorting and scene hit targets.
+- `src/RestaurantCanvas.tsx`: animated sprites, isometric depth sorting, camera and scene hit targets.
+- `src/art.ts`: transparent sprite-atlas loading and anchored drawing. Asset specifications and prompts are in `docs/art.md`.
 - `src/main.tsx`: compact controls, shop, browser clock and persistence.
 
 Simulation checks cover the complete service cycle, queued work, automation, purchases, firing workers and save continuity. Browser checks exercise a real canvas dish click, mandatory cleanup, pause, persistence and mobile shop controls.

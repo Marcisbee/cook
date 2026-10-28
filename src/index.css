@@ -1,7 +1,13 @@
 :root {
-  font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
-  color: #354a40;
-  background: #a7b68c;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #3f493a;
+  background: #b9ca91;
   font-synthesis: none;
   font-size: 14px;
 }
@@ -16,22 +22,22 @@ input {
   font: inherit;
 }
 button {
-  border: 2px solid #50644f;
-  border-radius: 2px;
-  background: #f3e6c6;
+  border: 1px solid #9aa883;
+  border-radius: 5px;
+  background: #fff9e9;
   color: #354a40;
   padding: 9px 12px;
-  box-shadow: 0 3px 0 #50644f;
+  box-shadow: 0 2px 0 #aab091;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 650;
   min-height: 40px;
 }
 button:hover:not(:disabled) {
-  background: #fff3d2;
+  background: #fffdf3;
 }
 button:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 #50644f;
+  box-shadow: none;
 }
 button:disabled {
   opacity: 0.5;
@@ -39,7 +45,7 @@ button:disabled {
 }
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid #be6d42;
+  outline: 3px solid #bb7947;
   outline-offset: 3px;
 }
 h1,
@@ -51,15 +57,23 @@ p {
 small {
   font-size: 11px;
 }
+.game {
+  height: 100dvh;
+  min-height: 650px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 header {
   display: flex;
   align-items: center;
   gap: 24px;
-  padding: 12px 20px;
-  border-bottom: 2px solid #74886a;
-  background: #f0e5c7;
+  padding: 12px 24px;
+  border-bottom: 1px solid #d0ccaf;
+  background: #fbf4e2;
   position: relative;
   z-index: 1;
+  box-shadow: 0 2px 8px #544d3310;
 }
 .brand {
   display: flex;
@@ -69,6 +83,9 @@ header {
 }
 .brand strong {
   display: block;
+  font-family: Georgia, serif;
+  font-size: 21px;
+  letter-spacing: -0.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -77,17 +94,22 @@ header {
 .brand small {
   display: block;
   margin-top: 4px;
-  color: #748069;
+  letter-spacing: 1.1px;
+  font-size: 9px;
+  color: #8a8e71;
 }
 .logo {
-  background: #4b6b55;
+  background: #536f52;
   color: #ffe8b7;
-  padding: 9px 5px;
-  box-shadow: 3px 3px #b5bb94;
+  padding: 10px 8px;
+  border-radius: 9px;
+  font-family: Georgia, serif;
   font-weight: 900;
 }
 .cash {
-  font-size: 22px;
+  font-family: Georgia, serif;
+  font-size: 27px;
+  color: #6e6a42;
   font-weight: 700;
   margin-left: auto;
   white-space: nowrap;
@@ -106,12 +128,11 @@ header {
 .controls button {
   min-width: 40px;
   padding: 6px;
-}
-.game {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
+  border: 1px solid #d8d3b6;
+  box-shadow: 0 2px 0 #d8d3b6;
+  background: #fffaf0;
+  border-radius: 6px;
+  color: #627151;
 }
 .world {
   position: relative;
@@ -121,55 +142,99 @@ header {
   justify-content: center;
   min-height: 0;
   overflow: hidden;
+  background: #b9ca91;
 }
 .world canvas {
   display: block;
-  width: min(100%, calc((100dvh - 240px) * 1.5238));
+  width: min(100%, calc((100dvh - 196px) * 1.53846));
   height: auto;
   image-rendering: pixelated;
-  touch-action: manipulation;
+  touch-action: none;
+  flex: none;
 }
 .world-hint {
   position: absolute;
-  bottom: 9px;
-  font-size: 11px;
-  max-width: 94%;
+  bottom: 13px;
+  font-size: 10px;
+  max-width: 80%;
   text-align: center;
-  color: #43573f;
-  background: #dce0b9c9;
-  padding: 5px 8px;
+  color: #65764e;
+  background: #e6edccdd;
+  padding: 6px 10px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.camera-controls {
+  display: flex;
+  position: absolute;
+  bottom: 12px;
+  right: 20px;
+  gap: 4px;
+}
+.camera-controls button {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  min-width: 32px;
+  min-height: 30px;
+  background: #f7f4de;
+}
+.art-loading {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff3d8;
+  padding: 18px 24px;
+  border: 1px solid #a3b180;
+}
+.paused {
+  position: absolute;
+  top: 95px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff7de;
+  border: 1px solid #a8b28b;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px #40543422;
+  padding: 10px 20px;
+  font-weight: bold;
+  font-size: 11px;
+  letter-spacing: 3px;
 }
 .status {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 20px;
-  border-top: 2px solid #7e906d;
-  background: #d5d8ad;
+  padding: 8px 24px;
+  border-top: 1px solid #a9ba8e;
+  background: #eef0d7;
   font-size: 11px;
+  color: #6d7856;
 }
 .status span:last-child {
   white-space: nowrap;
 }
 footer {
   display: flex;
-  gap: 16px;
-  padding: 12px 20px;
-  background: #f0e5c7;
-  border-top: 2px solid #99a078;
+  gap: 20px;
+  padding: 12px 24px;
+  background: #fbf4e2;
+  border-top: 1px solid #dedcc2;
   align-items: center;
 }
 .service {
   display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 22px;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 28px;
   flex: 1;
   min-width: 0;
 }
 .service h2 {
   font-size: 10px;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   margin-bottom: 8px;
+  color: #89916e;
 }
 .service h2 span {
   color: #8e6b3f;
@@ -185,17 +250,18 @@ footer {
 .chips button {
   white-space: nowrap;
   font-size: 12px;
-  padding: 6px 9px;
+  padding: 7px 14px;
 }
 .empty {
-  font-size: 11px;
-  color: #7b8069;
+  font-size: 12px;
+  color: #969b80;
 }
 .food {
   display: grid;
   grid-template-columns: auto auto;
   column-gap: 6px;
-  background: #e4e9bb;
+  background: #f3e8c7;
+  border-color: #c2ad71;
 }
 .food small {
   grid-column: 2;
@@ -213,40 +279,33 @@ footer {
   align-self: center;
 }
 .shop-button {
-  background: #536f52;
+  background: #607954;
   color: #fff1cb;
   padding: 13px 18px;
+  border: 1px solid #506649;
+  box-shadow: 0 3px 0 #3f5b3e;
+  border-radius: 6px;
+  min-width: 110px;
 }
 .shop-button:hover:not(:disabled) {
-  background: #648360;
+  background: #718b62;
 }
 .shop-button span {
   margin-left: 12px;
 }
 .draft {
-  background: #f0e5c7;
+  background: #fbf4e2;
   text-align: center;
-  font-size: 9px;
-  letter-spacing: 0.4px;
+  font-size: 8px;
+  letter-spacing: 0.8px;
   padding-bottom: 7px;
-  color: #8a8a70;
-}
-.paused {
-  position: absolute;
-  top: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #f6e8bf;
-  border: 2px solid #50644f;
-  box-shadow: 4px 4px #50644f;
-  padding: 10px 20px;
-  font-weight: bold;
-  letter-spacing: 3px;
+  color: #a3a58b;
 }
 .scrim {
   position: fixed;
   inset: 0;
-  background: #263c3166;
+  background: #26351e55;
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -254,24 +313,27 @@ footer {
   z-index: 5;
 }
 .panel {
-  width: 500px;
+  width: 510px;
   max-width: 100%;
   max-height: 85dvh;
   overflow: auto;
-  background: #f1e5c5;
-  border: 3px solid #50644f;
-  box-shadow: 6px 6px #354d3d;
+  background: #fff9e9;
+  border: 1px solid #b5b491;
+  border-radius: 12px;
+  box-shadow: 0 18px 80px #27391e44;
 }
 .panel-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 2px solid #b5b48e;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e7dfc4;
 }
 .panel h2 {
-  font-size: 15px;
+  font-family: Georgia, serif;
+  font-size: 21px;
+  font-weight: 400;
   line-height: 1.4;
 }
 .panel-head button {
@@ -282,27 +344,31 @@ footer {
 .panel nav {
   display: flex;
   gap: 8px;
-  padding: 14px 16px 6px;
+  padding: 16px 20px 8px;
 }
 .panel nav button {
   flex: 1;
-  padding: 7px;
+  padding: 8px;
   text-transform: capitalize;
   font-size: 12px;
+  border-color: #e1d9bb;
+  box-shadow: none;
+  background: #f5efd8;
 }
 .panel nav button[aria-pressed="true"] {
-  background: #567154;
-  color: #ffedc5;
+  background: #657e57;
+  color: #fff8e2;
+  border-color: #657e57;
 }
 .shop-list {
-  padding: 8px 16px 16px;
+  padding: 6px 20px 20px;
 }
 .shop-list article {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 17px 0;
-  border-bottom: 1px dashed #afaf89;
+  padding: 20px 0;
+  border-bottom: 1px dashed #d8d5ba;
 }
 .shop-list article:last-child {
   border-bottom: 0;
@@ -311,7 +377,7 @@ footer {
   flex: 1;
 }
 .shop-list h3 {
-  font-size: 14px;
+  font-size: 15px;
   margin-bottom: 6px;
 }
 .shop-list h3 small {
@@ -320,20 +386,22 @@ footer {
 }
 .shop-list p,
 .tip {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
-  color: #6d785f;
+  color: #859071;
 }
 .shop-list article > button {
-  min-width: 70px;
+  min-width: 74px;
+  padding: 8px 12px;
+  background: #f1ecd1;
 }
 .tip {
   padding: 5px 0;
 }
 .help {
-  padding: 18px;
+  padding: 20px;
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 .help ol {
   padding-left: 22px;
@@ -367,42 +435,39 @@ footer {
   flex-direction: column;
   padding: 24px;
   text-align: center;
-  background: repeating-linear-gradient(
-    0deg,
-    #a7b68c,
-    #a7b68c 6px,
-    #a4b389 6px,
-    #a4b389 8px
-  );
+  background: radial-gradient(ellipse at top, #e4e8c6, #b5c893);
+  color: #465d40;
 }
 .welcome h1 {
-  font-size: clamp(36px, 7vw, 64px);
-  letter-spacing: -3px;
-  text-shadow: 3px 3px #e1d8ad;
-  margin: 8px 0 14px;
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(42px, 7vw, 68px);
+  letter-spacing: -2px;
+  margin: 8px 0 12px;
 }
 .title-art {
-  font-size: 35px;
-  line-height: 0.65;
-  color: #f7eac4;
-  text-shadow: 3px 3px #526e50;
-  margin-bottom: 32px;
+  width: 124px;
+  height: 124px;
+  background: url("/art/characters.png") 0 0/400% 400% no-repeat;
+  margin-bottom: 12px;
 }
 .welcome p {
   font-size: 13px;
   line-height: 1.7;
+  color: #768365;
 }
 .welcome .eyebrow {
   font-size: 9px;
-  letter-spacing: 1.4px;
+  letter-spacing: 2px;
+  color: #5f7e4c;
 }
 .welcome form {
   margin: 24px 0 18px;
-  width: 300px;
+  width: 320px;
   max-width: 100%;
   text-align: left;
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 .welcome label {
   font-size: 11px;
@@ -410,33 +475,36 @@ footer {
 .welcome input {
   display: block;
   width: 100%;
-  border: 2px solid #6a7e5e;
-  background: #f1e6c7;
+  border: 1px solid #a7b48a;
+  background: #fff9e7;
   padding: 10px;
   margin-top: 5px;
   color: #354a40;
-  border-radius: 0;
+  border-radius: 5px;
+}
+.welcome .primary {
+  margin-top: 6px;
+  padding: 12px;
 }
 .welcome small {
+  margin-top: 6px;
   font-size: 9px;
-  color: #5e7356;
-}
-@media (min-width: 1000px) {
-  .game {
-    height: 100dvh;
-  }
+  color: #768463;
 }
 @media (max-width: 650px) {
+  .game {
+    min-height: 700px;
+  }
   header {
-    padding: 10px;
+    padding: 10px 12px;
     gap: 10px;
   }
   .brand {
     gap: 6px;
   }
   .brand strong {
-    font-size: 12px;
-    max-width: 31vw;
+    font-size: 16px;
+    max-width: 36vw;
   }
   .brand small {
     font-size: 8px;
@@ -445,14 +513,14 @@ footer {
     display: none;
   }
   .cash {
-    font-size: 18px;
+    font-size: 22px;
   }
   .controls {
     gap: 4px;
   }
   .controls button {
-    min-width: 32px;
-    min-height: 36px;
+    min-width: 30px;
+    min-height: 32px;
     padding: 4px;
     font-size: 12px;
   }
@@ -460,67 +528,94 @@ footer {
     display: none;
   }
   .world {
-    min-height: 300px;
+    min-height: 360px;
   }
   .world canvas {
-    width: 100%;
-    min-width: 470px;
-    max-width: none;
+    width: 650px;
+    min-width: 650px;
   }
   .world-hint {
     font-size: 9px;
-    bottom: 8px;
+    bottom: 50px;
+    max-width: 86%;
+  }
+  .camera-controls {
+    bottom: 12px;
+    right: 12px;
+  }
+  .camera-controls button {
+    min-height: 32px;
   }
   .status {
-    padding: 8px 10px;
-    font-size: 9px;
+    padding: 7px 12px;
+    font-size: 10px;
     flex-direction: column;
     gap: 5px;
   }
   footer {
-    padding: 10px;
-    gap: 8px;
+    padding: 12px;
+    gap: 12px;
     align-items: stretch;
   }
   .service {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .service h2 {
-    margin-bottom: 4px;
+    font-size: 9px;
+    margin-bottom: 5px;
   }
   .chips {
     min-height: 34px;
   }
   .chips button {
     min-height: 38px;
+    font-size: 12px;
+    padding: 6px 10px;
   }
   .shop-button {
-    padding: 8px;
-    font-size: 12px;
+    min-width: 70px;
+    padding: 10px;
+    font-size: 13px;
   }
   .shop-button span {
     display: block;
     margin: 8px 0;
   }
+  .empty {
+    font-size: 11px;
+  }
   .scrim {
     padding: 12px;
+  }
+  .panel {
+    border-radius: 10px;
+  }
+  .panel-head h2 {
+    font-size: 19px;
   }
   .panel nav {
     gap: 5px;
   }
-  .game {
-    min-height: 100dvh;
-  }
-  .world {
-    flex: 1;
-  }
-  .draft {
-    font-size: 8px;
+  .shop-list article {
+    padding: 17px 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   button:active:not(:disabled) {
     transform: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .scrim {
+    backdrop-filter: none;
+    background: #26351e99;
+  }
+}
+@media (prefers-contrast: more) {
+  .empty,
+  .draft,
+  .shop-list p {
+    color: #536344;
   }
 }

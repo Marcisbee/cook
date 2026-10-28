@@ -8,20 +8,42 @@ import {
   chefSpot,
   secondChefSpot,
 } from "./world";
-const W = 640,
-  H = 420;
+import { artReady, Art, drawSprite } from "./art";
+const W = 800,
+  H = 520;
 export const project = (p: Point) => ({
-  x: 300 + (p.x - p.y) * 20,
-  y: 104 + (p.x + p.y) * 10,
+  x: 400 + (p.x - p.y) * 30,
+  y: 116 + (p.x + p.y) * 15,
 });
 export const platePoint = (seat: number) => {
   const p = project(seat < 4 ? { x: 7, y: seat + 1 } : { x: seat + 4, y: 0 });
-  return { x: p.x, y: p.y - 14 };
+  return { x: p.x, y: p.y - 27 };
 };
 type Props = { game: Game; dispatch: (a: Action) => void };
 export default function RestaurantCanvas({ game, dispatch }: Props) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const [hover, setHover] = useState("");
+  const ref = useRef<HTMLCanvasElement>(null),
+    drag = useRef<{
+      x: number;
+      y: number;
+      ox: number;
+      oy: number;
+      moved: boolean;
+    } | null>(null);
+  const [art, setArt] = useState<Art | null>(null),
+    [error, setError] = useState(false),
+    [hover, setHover] = useState("");
+  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
+  useEffect(() => {
+    let live = true;
+    artReady
+      .then((a) => {
+        if (live) setArt(a);
+      })
+      .catch(() => setError(true));
+    return () => {
+      live = false;
+    };
+  }, []);
   useEffect(() => {
     const c = ref.current!,
       ctx = c.getContext("2d")!;
@@ -54,13 +76,28 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       s: string,
       x: number,
       y: number,
-      color = "#fff4d2",
-      size = 8,
+      color = "#fff6dd",
+      size = 10,
     ) => {
-      ctx.font = size + "px monospace";
+      ctx.font = "bold " + size + "px monospace";
       ctx.textAlign = "center";
       ctx.fillStyle = color;
       ctx.fillText(s, Math.round(x), Math.round(y));
+    };
+    const diamond = (p: Point, w: number, d: number, color: string, z = 0) => {
+      const a = project({ x: p.x - w / 2, y: p.y - d / 2 }),
+        b = project({ x: p.x + w / 2, y: p.y - d / 2 }),
+        c = project({ x: p.x + w / 2, y: p.y + d / 2 }),
+        e = project({ x: p.x - w / 2, y: p.y + d / 2 });
+      poly(
+        [
+          [a.x, a.y - z],
+          [b.x, b.y - z],
+          [c.x, c.y - z],
+          [e.x, e.y - z],
+        ],
+        color,
+      );
     };
     const box = (
       p: Point,
@@ -103,211 +140,256 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         top,
       );
     };
+    rect(0, 0, W, H, "#b9ca91");
+    ctx.save();
+    ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
+    ctx.scale(camera.zoom, camera.zoom);
+    ctx.translate(-W / 2, -H / 2);
+    // Deterministic garden texture: no random flicker between animation frames.
+    for (let i = 0; i < 420; i++) {
+      const x = ((i * 173 + 19) % 1000) - 100,
+        y = ((i * 97 + 31) % 720) - 100;
+      rect(x, y, 2, 2, i % 3 ? "#aabd80" : "#cbd69d");
+      if (i % 7 === 0) {
+        rect(x + 3, y - 2, 2, 4, "#8faa6c");
+        rect(x - 1, y - 4, 2, 4, "#9bb674");
+      }
+    }
+    for (let y = 10; y < 18; y++) {
+      diamond({ x: 1, y }, 1.5, 0.98, y % 2 ? "#d9c6a0" : "#e6d6b0");
+    }
+    // Behind-wall foliage must be painted before the wall itself.
+    if (art)
+      for (const p of [
+        { x: -2, y: 4 },
+        { x: -2, y: 8 },
+      ]) {
+        const q = project(p);
+        drawSprite(ctx, art.props[8], q.x, q.y + 12, 112);
+      }
+    // A foundation, timber seams and planted borders make a place, not a floating grid.
+    box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
+    const backA = project({ x: -0.5, y: -0.5 }),
+      backB = project({ x: 11.5, y: -0.5 }),
+      backC = project({ x: -0.5, y: 9.5 });
+    poly(
+      [
+        [backA.x, backA.y - 60],
+        [backB.x, backB.y - 60],
+        [backB.x, backB.y],
+        [backA.x, backA.y],
+      ],
+      "#e8dcb1",
+    );
+    poly(
+      [
+        [backA.x, backA.y - 60],
+        [backC.x, backC.y - 60],
+        [backC.x, backC.y],
+        [backA.x, backA.y],
+      ],
+      "#d3d5b1",
+    );
+    for (let x = 0; x < 12; x++)
+      for (let y = 0; y < 10; y++) {
+        const kitchen = x >= 7;
+        diamond(
+          { x, y },
+          0.99,
+          0.99,
+          kitchen
+            ? (x + y) % 2
+              ? "#d7d8ba"
+              : "#e9e6cc"
+            : (x + y) % 3
+              ? "#d7ad79"
+              : "#e0b983",
+        );
+        const p = project({ x, y });
+        if (!kitchen) {
+          rect(p.x - 5, p.y, 12, 1, "#c79b68");
+          rect(p.x + 9, p.y + 5, 5, 1, "#c49a69");
+        }
+      }
+    for (let x = 0; x < 12; x++) {
+      box({ x, y: -0.47 }, 1, 0.08, 15, "#5a806a", "#6c8b71", "#75937a");
+    }
+    for (let y = 0; y < 10; y++) {
+      box({ x: -0.47, y }, 0.08, 1, 15, "#557963", "#65866c", "#77967d");
+    }
+    // Windows and shelves follow the same projected wall plane.
+    const windowAt = (y: number) => {
+      const p = project({ x: -0.5, y });
+      poly(
+        [
+          [p.x - 22, p.y - 48],
+          [p.x + 20, p.y - 69],
+          [p.x + 20, p.y - 35],
+          [p.x - 22, p.y - 14],
+        ],
+        "#627b66",
+      );
+      poly(
+        [
+          [p.x - 18, p.y - 47],
+          [p.x + 16, p.y - 64],
+          [p.x + 16, p.y - 37],
+          [p.x - 18, p.y - 20],
+        ],
+        "#a8cabc",
+      );
+      poly(
+        [
+          [p.x - 17, p.y - 46],
+          [p.x - 2, p.y - 53],
+          [p.x - 2, p.y - 27],
+          [p.x - 17, p.y - 20],
+        ],
+        "#d1e5cd",
+      );
+      poly(
+        [
+          [p.x - 25, p.y - 12],
+          [p.x + 23, p.y - 36],
+          [p.x + 27, p.y - 33],
+          [p.x - 21, p.y - 9],
+        ],
+        "#f5e9c6",
+      );
+    };
+    windowAt(2.3);
+    windowAt(6.5);
+    const sign = project({ x: 3, y: -0.5 });
+    rect(sign.x - 48, sign.y - 55, 96, 25, "#465f4f");
+    rect(sign.x - 46, sign.y - 53, 92, 21, "#658069");
+    text(
+      game.name.toUpperCase().slice(0, 16),
+      sign.x,
+      sign.y - 39,
+      "#fff0cb",
+      8,
+    );
+    const items: { depth: number; draw: () => void }[] = [];
+    const add = (p: Point, draw: () => void, bias = 0) =>
+      items.push({ depth: p.x + p.y + bias, draw });
+    const prop = (
+      index: number,
+      p: Point,
+      height: number,
+      bottom = 0,
+      width?: number,
+    ) => {
+      if (!art) return;
+      const q = project(p);
+      drawSprite(
+        ctx,
+        art.props[index],
+        q.x,
+        q.y + bottom,
+        height,
+        false,
+        width,
+      );
+    };
     const person = (
       p: Point,
-      color: string,
       id: number,
+      role: "chef" | "waiter" | "guest",
       moving: boolean,
       carry = false,
       working = false,
       seated = false,
     ) => {
+      if (!art) return;
       const q = project(p),
-        step = moving && !reduced ? Math.sin(game.time * 15 + id) : 0,
-        bob = moving
-          ? Math.abs(step) * 1
-          : working && !reduced
-            ? Math.sin(game.time * 10)
-            : 0;
-      const direction = p as Point & { dx?: number; dy?: number };
-      ctx.save();
-      if ((direction.dx ?? 0) < 0 || (direction.dy ?? 0) > 0) {
-        ctx.translate(Math.round(q.x) * 2, 0);
-        ctx.scale(-1, 1);
-      }
-      const x = Math.round(q.x),
-        y = Math.round(q.y - bob);
-      rect(x - 5, y - 1, 10, 3, "#68584b55");
-      rect(x - 4, y - 6 + (seated ? 0 : Math.round(step * 2)), 3, 6, "#383950");
-      rect(x + 1, y - 6 - (seated ? 0 : Math.round(step * 2)), 3, 6, "#383950");
-      rect(x - 5, y - 15, 10, 10, color);
-      rect(x - 6, y - 14, 2, 7, "#e8ad7e");
-      rect(x + 4, y - 14 + (carry ? -3 : Math.round(step)), 2, 7, "#e8ad7e");
-      rect(x - 4, y - 23, 8, 9, "#edb889");
-      rect(x - 5, y - 23, 10, 3, id % 2 ? "#654738" : "#343440");
-      rect(x - 5, y - 21, 2, 5, id % 2 ? "#654738" : "#343440");
-      rect(x + 2, y - 19, 1, 1, "#393643");
-      if (color === "#f6e8bd") {
-        rect(x - 5, y - 26, 10, 5, "#fff2cf");
-        rect(x - 3, y - 28, 6, 3, "#fff2cf");
-        rect(x - 3, y - 12, 6, 5, "#719583");
-      }
+        direction = p as Point & { dx?: number; dy?: number };
+      const back =
+        role === "chef" && ((direction.dx ?? 0) < 0 || (direction.dy ?? 0) < 0);
+      const row = role === "chef" ? (back ? 1 : 0) : role === "guest" ? 2 : 3;
+      const frame = moving && !reduced ? Math.floor(game.time * 8 + id) % 4 : 1;
+      diamond(p, 0.45, 0.35, "#57452e25");
+      const flip =
+        !back && ((direction.dx ?? 0) < 0 || (direction.dy ?? 0) > 0);
+      drawSprite(
+        ctx,
+        role === "guest"
+          ? art.diners[(id % 4) * 4 + frame]
+          : art.characters[row * 4 + frame],
+        q.x,
+        q.y,
+        role === "chef" ? 52 : seated ? 37 : 48,
+        flip,
+      );
       if (carry) {
-        rect(x + 4, y - 15, 11, 3, "#f4efcf");
-        rect(x + 6, y - 18, 7, 3, "#d58c4b");
+        const side = flip ? -1 : 1;
+        drawSprite(ctx, art.props[10], q.x + side * 13, q.y - 17, 11);
       }
       if (working && !reduced) {
-        rect(
-          x + 6,
-          y - 11 + Math.round(Math.sin(game.time * 14) * 2),
-          5,
-          2,
-          "#fff0bc",
-        );
-      }
-      ctx.restore();
-    };
-    const plate = (x: number, y: number, dirty = false) => {
-      rect(x - 8, y - 3, 16, 5, "#b8bfaa");
-      rect(x - 7, y - 4, 14, 5, "#fff2cc");
-      rect(x - 5, y - 3, 10, 3, dirty ? "#9a8057" : "#cf7047");
-      if (!dirty) {
-        rect(x - 2, y - 3, 3, 2, "#89a464");
-        rect(x + 3, y - 2, 2, 1, "#f9d58a");
+        const swing = Math.sin(game.time * 12) * 2;
+        rect(q.x + 12, q.y - 19 + swing, 5, 2, "#e9cf9b");
       }
     };
-    rect(0, 0, W, H, "#a7b68c");
-    // Garden details sit outside the walkable floor.
-    for (let i = 0; i < 85; i++) {
-      const x = (i * 97 + 13) % 640,
-        y = (i * 61 + 19) % 420;
-      rect(x, y, 2, 3, i % 3 ? "#91a77c" : "#c1c79b");
-    }
-    // Raised foundation and a welcoming garden path give the room a clear footprint.
-    box({ x: 5.5, y: 4.5 }, 12, 10, 5, "#b78d63", "#8b664f", "#775542");
-    for (let y = 10; y < 15; y++) {
-      const p = project({ x: 1, y });
-      poly(
-        [
-          [p.x, p.y - 10],
-          [p.x + 25, p.y],
-          [p.x, p.y + 10],
-          [p.x - 25, p.y],
-        ],
-        y % 2 ? "#cfb78a" : "#dbc79c",
-      );
-    }
-    const tree = (x: number, y: number) => {
-      rect(x - 3, y - 15, 6, 23, "#806344");
-      rect(x - 20, y - 36, 40, 18, "#557952");
-      rect(x - 15, y - 45, 30, 33, "#62865a");
-      rect(x - 8, y - 50, 19, 39, "#7e9b65");
-      rect(x - 18, y - 32, 9, 4, "#8ca46b");
-      rect(x + 7, y - 19, 6, 3, "#486c4c");
-    };
-    tree(74, 207);
-    tree(538, 289);
-    tree(540, 125);
-    tree(138, 120);
-    for (const [x, y] of [
-      [90, 262],
-      [568, 218],
-      [169, 329],
-      [429, 345],
-    ]) {
-      rect(x - 10, y, 20, 7, "#799260");
-      for (let i = 0; i < 5; i++) {
-        rect(x - 9 + i * 4, y - 4 - (i % 2) * 3, 3, 5, "#657f54");
-        rect(
-          x - 9 + i * 4,
-          y - 6 - (i % 2) * 3,
-          3,
-          3,
-          i % 2 ? "#f1d6a1" : "#cc8a75",
-        );
-      }
-    }
-    for (let x = 0; x < 12; x++)
-      for (let y = 0; y < 10; y++) {
-        const p = project({ x, y });
-        poly(
-          [
-            [p.x, p.y - 10],
-            [p.x + 20, p.y],
-            [p.x, p.y + 10],
-            [p.x - 20, p.y],
-          ],
-          (x + y) % 2 ? "#d9bc8c" : "#e1c79b",
-        );
-        rect(p.x - 1, p.y + 7, 2, 1, "#bd9d73");
-      }
-    // Cutaway back walls never conceal the foreground action.
-    for (let x = 0; x < 12; x++)
-      box({ x, y: -0.5 }, 1, 0.15, 22, "#e0ddac", "#91a087", "#798e7c");
-    for (let y = 0; y < 10; y++)
-      box({ x: -0.5, y }, 0.15, 1, 22, "#e0ddac", "#91a087", "#798e7c");
-    const sign = project({ x: 3, y: -0.5 });
-    rect(sign.x - 26, sign.y - 25, 52, 14, "#526c59");
-    text(
-      game.name.toUpperCase().slice(0, 15),
-      sign.x,
-      sign.y - 15,
-      "#f1dfad",
-      6,
-    );
-    const windowFrame = project({ x: -0.5, y: 3 });
-    rect(windowFrame.x - 9, windowFrame.y - 25, 18, 15, "#4c786c");
-    rect(windowFrame.x - 7, windowFrame.y - 23, 14, 10, "#b9d8b7");
-    rect(windowFrame.x - 1, windowFrame.y - 23, 2, 11, "#eee1b8");
-    const items: { depth: number; draw: () => void }[] = [];
-    const add = (p: Point, draw: () => void, bias = 0) =>
-      items.push({ depth: p.x + p.y + bias, draw });
+    // Landscape is scenery only, outside the navigable floor.
+    for (const [p, h] of [
+      [{ x: 12, y: 8 }, 90],
+      [{ x: 10, y: 12 }, 90],
+    ] as [Point, number][])
+      add(p, () => prop(8, p, h, 12));
+    for (const p of [
+      { x: 12, y: 3 },
+      { x: 12, y: 8 },
+      { x: 7, y: 11 },
+    ])
+      add(p, () => prop(7, p, 40));
     for (let x = 8; x < 12; x++)
       add({ x, y: 0 }, () => {
-        box({ x, y: 0 }, 0.95, 0.9, 17, "#d6d6bf", "#8b9d92", "#657e78");
-        const p = project({ x, y: 0 });
-        rect(p.x - 7, p.y - 20, 14, 5, "#444a4f");
-        rect(p.x - 4, p.y - 19, 3, 2, "#e99b57");
+        prop(
+          x === 11 ? 5 : x === 10 ? 4 : 2,
+          { x, y: 0 },
+          x === 11 ? 76 : 52,
+          6,
+          58,
+        );
       });
     for (let y = 0; y < 5; y++)
-      add({ x: 7, y }, () => {
-        box({ x: 7, y }, 0.85, 0.98, 13, "#eee0b5", "#ad7e59", "#906044");
-      });
+      add({ x: 7, y }, () => prop(6, { x: 7, y }, 43, 7, 58));
+    add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 34));
+    // Diners and furniture occupy distinct floor cells; draw everything by its feet.
     tables.forEach((p, i) => {
       if (i >= game.seats.length) return;
-      const s = game.seats[i];
-      // Seat is behind the table, so diners are correctly occluded by its front edge.
-      const chair = { x: p.x - 1, y: p.y };
-      add(chair, () =>
-        box(chair, 0.48, 0.48, 4, "#9f6652", "#815044", "#66463f"),
-      );
+      const s = game.seats[i],
+        chair = { x: p.x - 1, y: p.y };
+      add(chair, () => prop(1, chair, 35, 3, 30));
       if (s && !["arriving", "dirty"].includes(s.stage))
         add(
           chair,
           () =>
             person(
               chair,
-              ["#c87d65", "#879fb0", "#b9a2bd", "#8caa7d"][s.id % 4],
               s.id,
+              "guest",
               false,
               false,
               s.stage === "eating",
               true,
             ),
-          0.1,
+          0.05,
         );
       add(p, () => {
-        box(p, 0.95, 0.95, 10, "#c88e5d", "#986744", "#78533d");
+        prop(0, p, 43, 8, 60);
         const q = project(p);
-        rect(q.x - 4, q.y - 16, 8, 5, "#f0d6a1");
+        text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
         if (s?.stage === "eating" || s?.stage === "dirty")
-          plate(q.x, q.y - 11, s.stage === "dirty");
-        else {
-          rect(q.x - 2, q.y - 14, 3, 5, "#6c8f66");
-          rect(q.x - 3, q.y - 17, 5, 3, "#d89577");
-        }
-        text(String(i + 1), q.x, q.y + 3, "#fff1ca", 7);
+          prop(
+            s.stage === "dirty" ? 11 : 10,
+            p,
+            s.stage === "dirty" ? 14 : 12,
+            -21,
+          );
       });
       if (s?.stage === "arriving") {
         const p = along(guestRoute(i), 1 - s.left / s.duration);
-        add(p, () =>
-          person(
-            p,
-            ["#c87d65", "#879fb0", "#b9a2bd", "#8caa7d"][s.id % 4],
-            s.id,
-            true,
-          ),
-        );
+        add(p, () => person(p, s.id, "guest", true));
       }
     });
     game.departures.forEach((d) => {
@@ -315,21 +397,14 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         [...guestRoute(d.seat)].reverse(),
         1 - d.left / d.duration,
       );
-      add(p, () =>
-        person(
-          p,
-          ["#c87d65", "#879fb0", "#b9a2bd", "#8caa7d"][d.id % 4],
-          d.id,
-          true,
-        ),
-      );
+      add(p, () => person(p, d.id, "guest", true));
     });
     Object.entries(game.actors).forEach(([id, a], i) =>
       add(a.pos, () =>
         person(
           a.pos,
-          id === "owner" ? "#f6e8bd" : "#7a97ad",
           i,
+          id === "owner" ? "chef" : "waiter",
           !["idle", "work"].includes(a.phase),
           a.job?.kind === "serve" && a.phase !== "pickup",
           a.phase === "work" ||
@@ -343,8 +418,8 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         add(secondChefSpot, () =>
           person(
             secondChefSpot,
-            "#f6e8bd",
             i + 2,
+            "chef",
             false,
             false,
             game.seats.some((s) => s?.worker === id),
@@ -358,63 +433,63 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         location,
         () => {
           const p = platePoint(i);
-          plate(p.x, p.y);
+          if (art) drawSprite(ctx, art.props[10], p.x, p.y + 5, 15);
           rect(
-            p.x + 7,
-            p.y - 11,
-            9,
-            8,
-            isQueued(game, i) ? "#8c957b" : "#435e51",
+            p.x + 9,
+            p.y - 13,
+            12,
+            12,
+            isQueued(game, i) ? "#7d8d70" : "#b45f3c",
           );
-          text(String(i + 1), p.x + 11, p.y - 5, "#fff2c9", 6);
+          text(String(i + 1), p.x + 15, p.y - 4, "#fff2c9", 8);
         },
         0.01,
       );
     });
     items.sort((a, b) => a.depth - b.depth).forEach((item) => item.draw());
     game.seats.forEach((s, i) => {
-      if (
-        !s ||
-        ["arriving", "ordered", "cooking", "serving", "eating"].includes(
-          s.stage,
-        )
-      )
-        return;
-      const q = project(tables[i]);
-      const queued = isQueued(game, i);
+      if (!s) return;
+      const q = project(tables[i]),
+        queued = isQueued(game, i);
       const label = queued
-        ? "..."
+        ? "QUEUED"
         : s.stage === "request"
           ? "ORDER"
           : s.stage === "dirty"
             ? "CLEAN"
             : s.stage === "choosing"
-              ? "MENU"
+              ? "CHOOSING"
               : s.stage === "ready"
-                ? "PASS"
+                ? "READY"
                 : "";
-      if (!label) return;
-      rect(
-        q.x - 17,
-        q.y - 42,
-        34,
-        11,
-        queued ? "#768677" : s.stage === "dirty" ? "#90634e" : "#425e50",
-      );
-      text(label, q.x, q.y - 34, "#fff2ce", 7);
-    });
-    // Timed actions have small, stable progress marks; payments rise from departing guests.
-    game.seats.forEach((s, i) => {
-      if (!s || !["choosing", "cooking", "eating"].includes(s.stage)) return;
-      const p = project(tables[i]);
-      rect(p.x - 10, p.y - 34, 20, 3, "#79876a");
-      rect(
-        p.x - 10,
-        p.y - 34,
-        Math.round(20 * (1 - s.left / s.duration)),
-        3,
-        "#f6e7b5",
-      );
+      if (label) {
+        const width = label.length * 5 + 12;
+        rect(
+          q.x - width / 2,
+          q.y - 66,
+          width,
+          15,
+          s.stage === "dirty" ? "#a16745" : queued ? "#7d8d70" : "#496952",
+        );
+        rect(
+          q.x - 2,
+          q.y - 51,
+          4,
+          3,
+          s.stage === "dirty" ? "#a16745" : "#496952",
+        );
+        text(label, q.x, q.y - 55, "#fff3d7", 8);
+      }
+      if (["choosing", "cooking", "eating"].includes(s.stage)) {
+        rect(q.x - 13, q.y - 44, 26, 4, "#796c51");
+        rect(
+          q.x - 12,
+          q.y - 43,
+          Math.round(24 * (1 - s.left / s.duration)),
+          2,
+          "#e8c778",
+        );
+      }
     });
     game.departures
       .filter((d) => d.duration - d.left < 2)
@@ -423,53 +498,65 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         text(
           "+ €" + [8, 14, 22][d.dish],
           p.x,
-          p.y - 32 - (d.duration - d.left) * 5,
-          "#3f6847",
-          8,
+          p.y - 58 - (d.duration - d.left) * 7,
+          "#4b744d",
+          12,
         );
       });
     game.seats
       .filter((s) => s?.stage === "cooking")
       .forEach((s) => {
         const p = project(s!.worker === "owner" ? chefSpot : secondChefSpot);
-        rect(p.x + 8, p.y - 15, 10, 3, "#455448");
-        rect(p.x + 10, p.y - 18, 5, 3, "#d89a58");
         for (let i = 0; i < 3; i++) {
-          const phase = ((reduced ? 0 : game.time * 8) + i * 5) % 15;
+          const phase = ((reduced ? 0 : game.time * 8) + i * 7) % 22;
           rect(
-            p.x + 10 + Math.round(Math.sin(phase) * 2),
-            p.y - 20 - phase,
-            2,
+            p.x + 9 + Math.round(Math.sin(phase) * 2),
+            p.y - 32 - phase,
             3,
-            "#f4e7c0",
+            5,
+            "#fff3d1bb",
           );
         }
       });
+    if (game.upgrades.includes("qr"))
+      game.seats.forEach((_, i) => {
+        const p = project(tables[i]);
+        rect(p.x + 13, p.y - 28, 7, 9, "#fff5d9");
+        rect(p.x + 14, p.y - 26, 2, 3, "#46604d");
+        rect(p.x + 17, p.y - 27, 2, 2, "#46604d");
+      });
     const entry = project({ x: 1, y: 10 });
-    rect(entry.x - 17, entry.y - 4, 34, 9, "#698064");
-    text("OPEN", entry.x, entry.y + 3, "#eedfb0", 6);
-    if (game.upgrades.includes("qr")) {
-      const p = project(tables[0]);
-      rect(p.x + 7, p.y - 18, 5, 6, "#fff3cf");
-      rect(p.x + 8, p.y - 17, 3, 3, "#343f38");
-    }
-  }, [game]);
-  const hit = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
+    text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
+    ctx.restore();
+  }, [game, art, camera]);
+  const coords = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - r.left) * W) / r.width,
-      y = ((e.clientY - r.top) * H) / r.height;
+    return {
+      x:
+        (((e.clientX - r.left) * W) / r.width - W / 2 - camera.x) /
+          camera.zoom +
+        W / 2,
+      y:
+        (((e.clientY - r.top) * H) / r.height - H / 2 - camera.y) /
+          camera.zoom +
+        H / 2,
+    };
+  };
+  const hit = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const { x, y } = coords(e);
     for (let i = 0; i < game.seats.length; i++) {
       const p = platePoint(i);
       if (
         game.seats[i]?.stage === "ready" &&
-        Math.abs(x - p.x) < 12 &&
-        Math.abs(y - p.y) < 8
+        Math.abs(x - p.x) < 17 &&
+        Math.abs(y - p.y) < 13
       )
         return { type: "serve" as const, seat: i };
     }
     for (let i = 0; i < game.seats.length; i++) {
       const p = project(tables[i]);
-      if (Math.abs(x - p.x) < 21 && y > p.y - 45 && y < p.y + 10) {
+      if (Math.abs(x - p.x) < 30 && y > p.y - 70 && y < p.y + 10) {
         if (game.seats[i]?.stage === "request")
           return { type: "order" as const, seat: i };
         if (game.seats[i]?.stage === "dirty")
@@ -485,24 +572,88 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         width={W}
         height={H}
         aria-label="Isometric restaurant. Use the table and food buttons below for keyboard controls."
-        onPointerMove={(e) => setHover(hit(e)?.type || "")}
-        onPointerLeave={() => setHover("")}
         onPointerDown={(e) => {
-          const a = hit(e);
-          if (a) dispatch(a);
+          e.currentTarget.setPointerCapture(e.pointerId);
+          drag.current = {
+            x: e.clientX,
+            y: e.clientY,
+            ox: camera.x,
+            oy: camera.y,
+            moved: false,
+          };
         }}
-        style={{ cursor: hover ? "pointer" : "default" }}
+        onPointerMove={(e) => {
+          setHover(hit(e)?.type || "");
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.clientX - d.x,
+            dy = e.clientY - d.y;
+          if (Math.hypot(dx, dy) > 5) d.moved = true;
+          if (d.moved) {
+            const r = e.currentTarget.getBoundingClientRect();
+            setCamera((c) => ({
+              ...c,
+              x: Math.max(-300, Math.min(300, d.ox + (dx * W) / r.width)),
+              y: Math.max(-200, Math.min(200, d.oy + (dy * H) / r.height)),
+            }));
+          }
+        }}
+        onPointerUp={(e) => {
+          if (drag.current && !drag.current.moved) {
+            const a = hit(e);
+            if (a) dispatch(a);
+          }
+          drag.current = null;
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+        }}
+        onPointerLeave={() => setHover("")}
+        style={{ cursor: hover ? "pointer" : "grab" }}
       />
+      {!art && (
+        <div className="art-loading">
+          {error
+            ? "Artwork could not load. Reload to retry."
+            : "Setting the tables…"}
+        </div>
+      )}
+      <div className="camera-controls">
+        <button
+          aria-label="Zoom out"
+          disabled={camera.zoom <= 0.8}
+          onClick={() =>
+            setCamera((c) => ({ ...c, zoom: Math.max(0.8, c.zoom - 0.2) }))
+          }
+        >
+          −
+        </button>
+        <button
+          aria-label="Reset camera"
+          onClick={() => setCamera({ x: 0, y: 0, zoom: 1 })}
+        >
+          {Math.round(camera.zoom * 100)}%
+        </button>
+        <button
+          aria-label="Zoom in"
+          disabled={camera.zoom >= 2}
+          onClick={() =>
+            setCamera((c) => ({ ...c, zoom: Math.min(2, c.zoom + 0.2) }))
+          }
+        >
+          +
+        </button>
+      </div>
       <span className="world-hint">
         {hover
           ? (
               {
-                order: "Take order",
-                serve: "Pick up this dish",
-                clean: "Clean table",
+                order: "Take this order",
+                serve: "Deliver this dish",
+                clean: "Clean this table",
               } as Record<string, string>
             )[hover]
-          : "Tap a table to take orders or clean · Tap a dish on the counter to serve"}
+          : "Drag to explore · Click tables and prepared food"}
       </span>
     </div>
   );

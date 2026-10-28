@@ -48,3 +48,5 @@ Walking uses `src/walk.ts`: a registered torso pose over two articulated legs. A
 ## Idle motion
 
 `src/idle.ts` animates registered staff and seated diner poses with breathing, weight shifts and occasional settling. The deformation fades to zero below the pelvis, keeping feet and chair contact fixed. Character-specific phase offsets avoid synchronized movement. Game time drives motion, so pause and speed apply consistently; reduced-motion uses an undeformed static pose. Idle motion yields to walking and service animations.
+
+Idle breathing uses a visible 3.2-second shoulder-rise and chest-expansion cycle at normal camera scale. Standing figures have a larger range than seated diners; menu selection retains breathing beneath the menu gesture. Lower-body anchors remain fixed.

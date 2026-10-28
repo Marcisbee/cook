@@ -13,8 +13,9 @@ export function drawIdle(
 ) {
   const scale = height / s.referenceHeight;
   const cycle = time + seed * 1.73;
-  const breath = Math.sin((cycle * Math.PI) / 2.1) * (seated ? 0.65 : 1);
-  const sway = Math.sin((cycle * Math.PI) / 3.4) * (seated ? 0.6 : 1.1);
+  const inhale = Math.sin((cycle * Math.PI) / 1.6);
+  const breath = inhale * (seated ? 1.7 : 2.6);
+  const sway = Math.sin((cycle * Math.PI) / 3.4) * (seated ? 0.9 : 1.6);
   const beat = ((cycle % 9) + 9) % 9;
   const settle =
     beat < 2 ? Math.sin(beat * Math.PI) * Math.sin((beat * Math.PI) / 2) : 0;
@@ -25,7 +26,7 @@ export function drawIdle(
   const yAt = (row: number) => {
     const y = (row - s.anchorY) * scale;
     return (
-      y - breath * weight(-y / height) - settle * 0.7 * weight(-y / height)
+      y - breath * weight(-y / height) - settle * 1.2 * weight(-y / height)
     );
   };
   ctx.save();
@@ -37,15 +38,19 @@ export function drawIdle(
       top = yAt(row),
       bottom = yAt(next);
     const influence = weight(((s.anchorY - (row + next) / 2) * scale) / height);
+    const chest = Math.sin(Math.PI * influence);
+    const expansion = 1 + (inhale + 1) * 0.035 * chest;
     ctx.drawImage(
       s.image,
       s.x,
       s.y + row,
       s.w,
       next - row,
-      -s.anchorX * scale + sway * influence + settle * 0.55 * influence,
+      -s.anchorX * scale * expansion +
+        sway * influence +
+        settle * 1.1 * influence,
       top,
-      s.w * scale,
+      s.w * scale * expansion,
       bottom - top,
     );
   }

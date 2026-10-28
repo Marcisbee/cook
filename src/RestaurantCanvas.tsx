@@ -417,7 +417,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           pants,
           role === "guest" && id % 4 === 3,
         );
-      } else if (!moving && !action && !reduced) {
+      } else if (!moving && (!action || action === "choose") && !reduced) {
         drawIdle(
           ctx,
           sprite,

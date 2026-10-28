@@ -41,7 +41,7 @@ export function furniture(
     face([a, b, c, e], top);
   };
   const leg = (x: number, y: number, h: number) =>
-    slab(x, y, 0.09, 0.09, h, h, "#d6ad72", "#916039", "#b5824b");
+    slab(x, y, 0.09, 0.09, h, h, "#b18b59", "#674631", "#90613e");
   if (kind === "counter") {
     slab(0, 0, 0.92, 0.92, 27, 27, "#b4824d", "#986138", "#b47e45");
     // Recessed oak panels follow both visible cabinet planes.
@@ -62,7 +62,7 @@ export function furniture(
                 at(0.465, t + 0.2, 4),
                 at(0.465, t, 4),
               ],
-          side === 0 ? "#a76c3e" : "#c18d52",
+          side === 0 ? "#a76c3e" : "#946740",
         );
       }
     slab(0, 0, 1, 1, 30, 3, "#f0e5cb", "#c8bba1", "#dbceb4");
@@ -82,19 +82,19 @@ export function furniture(
   }
   if (kind === "chair") {
     for (const x of [-0.22, 0.22]) for (const y of [-0.24, 0.24]) leg(x, y, 13);
-    slab(0, 0, 0.6, 0.64, 15, 3, "#bf935a", "#916039", "#a97643");
-    slab(0.015, 0, 0.49, 0.53, 17, 2, "#73946a", "#43634c", "#577b57");
+    slab(0, 0, 0.6, 0.64, 15, 3, "#997147", "#674631", "#795033");
+    slab(0.015, 0, 0.49, 0.53, 17, 2, "#4d6b5c", "#293f37", "#3d5547");
     // Back is on -X. The open side faces +X, toward the diner's table.
     for (const y of [-0.27, 0.27])
       slab(-0.27, y, 0.07, 0.07, 34, 21, "#e0b879", "#99683e", "#b7834c");
     for (const y of [-0.17, 0, 0.17])
       slab(-0.27, y, 0.045, 0.08, 31, 13, "#d6ac70", "#a77343", "#bf9054");
-    slab(-0.27, 0, 0.09, 0.67, 35, 3, "#dca968", "#9c693e", "#bd8a50");
+    slab(-0.27, 0, 0.09, 0.67, 35, 3, "#a68350", "#9c693e", "#bd8a50");
     return;
   }
   for (const x of [-0.43, 0.43]) for (const y of [-0.43, 0.43]) leg(x, y, 24);
   slab(0, 0, 1.08, 1.08, 25, 4, "#b5834d", "#946035", "#aa7440");
-  slab(0, 0, 1.18, 1.18, 28, 3, "#d5a266", "#b17b45", "#c18d52");
+  slab(0, 0, 1.18, 1.18, 28, 3, "#a77d4f", "#755035", "#946740");
   for (const x of [-0.38, -0.14, 0.12, 0.37])
     face(
       [
@@ -103,8 +103,28 @@ export function furniture(
         at(x + 0.012, 0.56, 28.02),
         at(x, 0.56, 28.02),
       ],
-      "#ce9d62",
+      "#8f6844",
     );
+  // Fine grain and brass corner pins, all lying on the tabletop plane.
+  for (let i = 0; i < 22; i++) {
+    const x = -0.51 + (i % 6) * 0.17,
+      y = -0.48 + Math.floor(i / 6) * 0.26;
+    face(
+      [
+        at(x, y, 28.03),
+        at(x + 0.006, y, 28.03),
+        at(x + 0.006, y + 0.13, 28.03),
+        at(x, y + 0.13, 28.03),
+      ],
+      i % 2 ? "#b18a5e" : "#8c6542",
+    );
+  }
+  for (const x of [-0.5, 0.5])
+    for (const y of [-0.5, 0.5]) {
+      const p = at(x, y, 28.1);
+      ctx.fillStyle = "#d3b177";
+      ctx.fillRect(p[0], p[1], 0.8, 0.8);
+    }
   // Linen stays on the tabletop plane; the meal has clear space in front.
   face(
     [
@@ -113,7 +133,7 @@ export function furniture(
       at(0.57, 0.22, 28.1),
       at(-0.57, 0.22, 28.1),
     ],
-    "#f7edcf",
+    "#d4c4a3",
   );
   face(
     [
@@ -122,7 +142,7 @@ export function furniture(
       at(0.59, 0.22, 22),
       at(0.59, -0.22, 22),
     ],
-    "#d9cbaa",
+    "#b9a789",
   );
   const vase = at(0.28, -0.3, 28);
   ctx.fillStyle = "#a96540";

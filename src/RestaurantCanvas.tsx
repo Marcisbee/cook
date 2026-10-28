@@ -4,6 +4,7 @@ import { Point, tables, along, guestRoute, cookSpot, foodSpot } from "./world";
 import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
+import { interior } from "./interior";
 const W = 800,
   H = 520;
 export const project = (p: Point) => ({
@@ -24,6 +25,11 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       oy: number;
       moved: boolean;
     } | null>(null);
+  const scenery = useRef<{
+    key: string;
+    art: Art | null;
+    canvas: HTMLCanvasElement;
+  } | null>(null);
   const [art, setArt] = useState<Art | null>(null),
     [error, setError] = useState(false),
     [hover, setHover] = useState("");
@@ -80,7 +86,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     if (c.width !== surface.width) c.width = surface.width;
     if (c.height !== surface.height) c.height = surface.height;
     ctx.setTransform(surface.width / W, 0, 0, surface.height / H, 0, 0);
-    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingEnabled = false;
     ctx.imageSmoothingQuality = "high";
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -174,135 +180,134 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         top,
       );
     };
-    rect(0, 0, W, H, "#b9ca91");
+    const sceneryKey = [
+      surface.width,
+      surface.height,
+      camera.x,
+      camera.y,
+      camera.zoom,
+    ].join(":");
+    if (scenery.current?.key !== sceneryKey || scenery.current.art !== art) {
+      rect(0, 0, W, H, "#718765");
+      ctx.save();
+      ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
+      ctx.scale(camera.zoom, camera.zoom);
+      ctx.translate(-W / 2, -H / 2);
+      // Deterministic garden texture: no random flicker between animation frames.
+      for (let i = 0; i < 1300; i++) {
+        const x = ((i * 173 + 19) % 1000) - 100,
+          y = ((i * 97 + 31) % 720) - 100;
+        rect(x, y, 1, 1, i % 3 ? "#6c805a" : "#81966b");
+        if (i % 7 === 0) {
+          rect(x + 3, y - 2, 2, 4, "#536d50");
+          rect(x - 1, y - 4, 2, 4, "#83946a");
+        }
+      }
+      for (let y = 10; y < 18; y++) {
+        diamond({ x: 1, y }, 1.5, 0.98, y % 2 ? "#d9c6a0" : "#e6d6b0");
+      }
+      // Cobbled terrace and stone edging around the restaurant footprint.
+      for (let x = -2; x < 14; x++)
+        for (let y = -2; y < 13; y++) {
+          if (x >= 0 && x < 12 && y >= 0 && y < 10) continue;
+          if (x < 0 && y < 0) continue;
+          const shades = ["#a9a597", "#b4ad9e", "#bcb4a4", "#a5a394"];
+          diamond({ x, y }, 0.97, 0.97, shades[(x * 3 + y + 100) % 4]);
+          for (let a = 0; a < 3; a++)
+            for (let b = 0; b < 3; b++) {
+              diamond(
+                { x: x - 0.32 + a * 0.32, y: y - 0.32 + b * 0.32 },
+                0.29,
+                0.29,
+                shades[(x + y + a + b + 100) % 4],
+              );
+              const q = project({
+                x: x - 0.32 + a * 0.32,
+                y: y - 0.32 + b * 0.32,
+              });
+              rect(q.x - 2, q.y - 1, 2, 0.5, "#cbc2af");
+            }
+
+          diamond({ x: x - 0.16, y: y + 0.12 }, 0.34, 0.015, "#c7bfac");
+        }
+      for (let x = 2; x < 12; x++) {
+        box({ x, y: 10.6 }, 0.98, 0.34, 8, "#c6b494", "#82775f", "#a09276");
+        box({ x, y: 10.6 }, 1.03, 0.42, 10, "#dfcba7", "#b3a07e", "#c5b28f");
+      }
+      // Behind-wall foliage must be painted before the wall itself.
+      if (art)
+        for (const p of [
+          { x: -2, y: 4 },
+          { x: -2, y: 8 },
+        ]) {
+          const q = project(p);
+          drawSprite(ctx, art.props[8], q.x, q.y + 12, 112);
+        }
+      // A foundation, timber seams and planted borders make a place, not a floating grid.
+      box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
+      const backA = project({ x: -0.5, y: -0.5 }),
+        backB = project({ x: 11.5, y: -0.5 }),
+        backC = project({ x: -0.5, y: 9.5 });
+      poly(
+        [
+          [backA.x, backA.y - 90],
+          [backB.x, backB.y - 90],
+          [backB.x, backB.y],
+          [backA.x, backA.y],
+        ],
+        "#dfcaab",
+      );
+      poly(
+        [
+          [backA.x, backA.y - 90],
+          [backC.x, backC.y - 90],
+          [backC.x, backC.y],
+          [backA.x, backA.y],
+        ],
+        "#d1bfa4",
+      );
+      for (let x = 0; x < 12; x++)
+        for (let y = 0; y < 10; y++) {
+          const kitchen = x >= 7;
+          diamond(
+            { x, y },
+            0.99,
+            0.99,
+            kitchen
+              ? (x + y) % 2
+                ? "#79928a"
+                : "#dbd6ba"
+              : (x + y) % 3
+                ? "#d7ad79"
+                : "#e0b983",
+          );
+          const p = project({ x, y });
+          if (!kitchen) {
+            rect(p.x - 5, p.y, 12, 1, "#c79b68");
+            rect(p.x + 9, p.y + 5, 5, 1, "#c49a69");
+          }
+        }
+      for (let x = 0; x < 12; x++) {
+        box({ x, y: -0.47 }, 1, 0.08, 15, "#5a806a", "#6c8b71", "#75937a");
+      }
+      for (let y = 0; y < 10; y++) {
+        box({ x: -0.47, y }, 0.08, 1, 15, "#557963", "#65866c", "#77967d");
+      }
+      interior(ctx, project, art);
+      ctx.restore();
+      const background = document.createElement("canvas");
+      background.width = surface.width;
+      background.height = surface.height;
+      background.getContext("2d")!.drawImage(c, 0, 0);
+      scenery.current = { key: sceneryKey, art, canvas: background };
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(scenery.current.canvas, 0, 0);
+    ctx.setTransform(surface.width / W, 0, 0, surface.height / H, 0, 0);
     ctx.save();
     ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
     ctx.scale(camera.zoom, camera.zoom);
     ctx.translate(-W / 2, -H / 2);
-    // Deterministic garden texture: no random flicker between animation frames.
-    for (let i = 0; i < 420; i++) {
-      const x = ((i * 173 + 19) % 1000) - 100,
-        y = ((i * 97 + 31) % 720) - 100;
-      rect(x, y, 2, 2, i % 3 ? "#aabd80" : "#cbd69d");
-      if (i % 7 === 0) {
-        rect(x + 3, y - 2, 2, 4, "#8faa6c");
-        rect(x - 1, y - 4, 2, 4, "#9bb674");
-      }
-    }
-    for (let y = 10; y < 18; y++) {
-      diamond({ x: 1, y }, 1.5, 0.98, y % 2 ? "#d9c6a0" : "#e6d6b0");
-    }
-    // Behind-wall foliage must be painted before the wall itself.
-    if (art)
-      for (const p of [
-        { x: -2, y: 4 },
-        { x: -2, y: 8 },
-      ]) {
-        const q = project(p);
-        drawSprite(ctx, art.props[8], q.x, q.y + 12, 112);
-      }
-    // A foundation, timber seams and planted borders make a place, not a floating grid.
-    box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
-    const backA = project({ x: -0.5, y: -0.5 }),
-      backB = project({ x: 11.5, y: -0.5 }),
-      backC = project({ x: -0.5, y: 9.5 });
-    poly(
-      [
-        [backA.x, backA.y - 60],
-        [backB.x, backB.y - 60],
-        [backB.x, backB.y],
-        [backA.x, backA.y],
-      ],
-      "#e8dcb1",
-    );
-    poly(
-      [
-        [backA.x, backA.y - 60],
-        [backC.x, backC.y - 60],
-        [backC.x, backC.y],
-        [backA.x, backA.y],
-      ],
-      "#d3d5b1",
-    );
-    for (let x = 0; x < 12; x++)
-      for (let y = 0; y < 10; y++) {
-        const kitchen = x >= 7;
-        diamond(
-          { x, y },
-          0.99,
-          0.99,
-          kitchen
-            ? (x + y) % 2
-              ? "#d7d8ba"
-              : "#e9e6cc"
-            : (x + y) % 3
-              ? "#d7ad79"
-              : "#e0b983",
-        );
-        const p = project({ x, y });
-        if (!kitchen) {
-          rect(p.x - 5, p.y, 12, 1, "#c79b68");
-          rect(p.x + 9, p.y + 5, 5, 1, "#c49a69");
-        }
-      }
-    for (let x = 0; x < 12; x++) {
-      box({ x, y: -0.47 }, 1, 0.08, 15, "#5a806a", "#6c8b71", "#75937a");
-    }
-    for (let y = 0; y < 10; y++) {
-      box({ x: -0.47, y }, 0.08, 1, 15, "#557963", "#65866c", "#77967d");
-    }
-    // Windows and shelves follow the same projected wall plane.
-    const windowAt = (y: number) => {
-      const p = project({ x: -0.5, y });
-      poly(
-        [
-          [p.x - 22, p.y - 48],
-          [p.x + 20, p.y - 69],
-          [p.x + 20, p.y - 35],
-          [p.x - 22, p.y - 14],
-        ],
-        "#627b66",
-      );
-      poly(
-        [
-          [p.x - 18, p.y - 47],
-          [p.x + 16, p.y - 64],
-          [p.x + 16, p.y - 37],
-          [p.x - 18, p.y - 20],
-        ],
-        "#a8cabc",
-      );
-      poly(
-        [
-          [p.x - 17, p.y - 46],
-          [p.x - 2, p.y - 53],
-          [p.x - 2, p.y - 27],
-          [p.x - 17, p.y - 20],
-        ],
-        "#d1e5cd",
-      );
-      poly(
-        [
-          [p.x - 25, p.y - 12],
-          [p.x + 23, p.y - 36],
-          [p.x + 27, p.y - 33],
-          [p.x - 21, p.y - 9],
-        ],
-        "#f5e9c6",
-      );
-    };
-    windowAt(2.3);
-    windowAt(6.5);
-    const sign = project({ x: 3, y: -0.5 });
-    rect(sign.x - 48, sign.y - 55, 96, 25, "#465f4f");
-    rect(sign.x - 46, sign.y - 53, 92, 21, "#658069");
-    text(
-      game.name.toUpperCase().slice(0, 16),
-      sign.x,
-      sign.y - 39,
-      "#fff0cb",
-      8,
-    );
     const entry = project({ x: 1, y: 10 });
     diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
     text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
@@ -487,7 +492,11 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       if (i >= game.seats.length) return;
       const s = game.seats[i],
         chair = { x: p.x - 1, y: p.y };
-      add(chair, () => furniture(ctx, project, chair, "chair"));
+      add(chair, () => {
+        const q = project(chair);
+        if (art) drawSprite(ctx, art.props[1], q.x, q.y + 9, 0, true, 36);
+        else furniture(ctx, project, chair, "chair");
+      });
       if (s && !["arriving", "dirty"].includes(s.stage))
         add(
           chair,
@@ -508,7 +517,10 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           0.05,
         );
       add(p, () => {
-        furniture(ctx, project, p, "table");
+        if (art) {
+          const q = project(p);
+          drawSprite(ctx, art.props[0], q.x, q.y + 16, 0, false, 70);
+        } else furniture(ctx, project, p, "table");
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
         if (s?.stage === "eating" || s?.stage === "dirty") {

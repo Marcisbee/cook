@@ -115,7 +115,7 @@ test("canvas renders at display resolution on large and high-DPI screens, includ
       return (
         r.width === r.expectedWidth &&
         r.height === r.expectedHeight &&
-        r.smoothing &&
+        !r.smoothing &&
         r.css === "auto"
       );
     })

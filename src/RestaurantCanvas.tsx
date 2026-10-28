@@ -6,9 +6,12 @@ import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
 import { interior } from "./interior";
 import { groundMaterial, material } from "./materials";
+import { unproject } from "./isometric";
+import { depthOrder, Drawable } from "./depth";
 import { WalkCycles } from "./walk";
 import {
   tileToScreen,
+  propHeight,
   fixtureTiles,
   gardenTiles,
   groundKind,
@@ -293,9 +296,21 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     const entry = project({ x: 1, y: 10 });
     diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
     text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
-    const items: { depth: number; draw: () => void }[] = [];
-    const add = (p: Point, draw: () => void, bias = 0) =>
-      items.push({ depth: p.x + p.y + bias, draw });
+    const items: Drawable[] = [];
+    const add = (
+      p: Point,
+      draw: () => void,
+      bias = 0,
+      footprint: [number, number] = [0.3, 0.3],
+      height = 56,
+    ) =>
+      items.push({
+        position: p,
+        footprint,
+        height,
+        depth: p.x + p.y + bias,
+        draw,
+      });
     const prop = (
       index: number,
       p: Point,
@@ -458,20 +473,41 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         ...fixtureTiles,
         ...gardenTiles.filter((p) => p.x >= 0 && p.y >= 0),
       ])
-        add(p, () => drawTileProp(ctx, art, p));
+        add(
+          p,
+          () => drawTileProp(ctx, art, p),
+          0,
+          p.footprint,
+          propHeight(art, p),
+        );
       for (let x = 8; x < 12; x++) {
         const p = kitchenTile({ x, y: 0 });
-        add(p, () => drawTileProp(ctx, art, p));
+        add(
+          p,
+          () => drawTileProp(ctx, art, p),
+          0,
+          p.footprint,
+          propHeight(art, p),
+        );
       }
     }
     for (let y = 0; y < 5; y++)
-      add({ x: 7, y }, () =>
-        furniture(ctx, project, { x: 7, y }, "counter", y === 4),
+      add(
+        { x: 7, y },
+        () => furniture(ctx, project, { x: 7, y }, "counter", y === 4),
+        0,
+        [1, 1],
+        30,
       );
     for (let seat = 4; seat < game.seats.length; seat++) {
       const p = foodSpot(seat);
-      add(p, () =>
-        furniture(ctx, project, p, "counter", seat === game.seats.length - 1),
+      add(
+        p,
+        () =>
+          furniture(ctx, project, p, "counter", seat === game.seats.length - 1),
+        0,
+        [1, 1],
+        30,
       );
     }
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 22));
@@ -480,11 +516,17 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       if (i >= game.seats.length) return;
       const s = game.seats[i],
         chair = { x: p.x - 1, y: p.y };
-      add(chair, () => {
-        const q = project(chair);
-        if (art) drawTileProp(ctx, art, chairTile(chair));
-        else furniture(ctx, project, chair, "chair");
-      });
+      add(
+        chair,
+        () => {
+          const q = project(chair);
+          if (art) drawTileProp(ctx, art, chairTile(chair));
+          else furniture(ctx, project, chair, "chair");
+        },
+        0,
+        chairTile(chair).footprint,
+        38,
+      );
       if (s && !["arriving", "dirty"].includes(s.stage))
         add(
           chair,
@@ -504,33 +546,41 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             ),
           0.05,
         );
-      add(p, () => {
-        if (art) {
+      add(
+        p,
+        () => {
+          if (art) {
+            const q = project(p);
+            drawTileProp(ctx, art, tableTile(p));
+          } else furniture(ctx, project, p, "table");
           const q = project(p);
-          drawTileProp(ctx, art, tableTile(p));
-        } else furniture(ctx, project, p, "table");
-        const q = project(p);
-        text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
-        if (s?.stage === "eating" || s?.stage === "dirty") {
-          const cleaner = Object.values(game.actors).find(
-            (a) =>
-              a.phase === "work" && a.job?.kind === "clean" && a.job.seat === i,
-          );
-          ctx.save();
-          if (cleaner && !reduced)
-            ctx.globalAlpha = Math.min(
-              1,
-              (cleaner.left / cleaner.duration) * 2,
+          text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
+          if (s?.stage === "eating" || s?.stage === "dirty") {
+            const cleaner = Object.values(game.actors).find(
+              (a) =>
+                a.phase === "work" &&
+                a.job?.kind === "clean" &&
+                a.job.seat === i,
             );
-          prop(
-            s.stage === "dirty" ? 11 : 10,
-            p,
-            s.stage === "dirty" ? 14 : 12,
-            -28,
-          );
-          ctx.restore();
-        }
-      });
+            ctx.save();
+            if (cleaner && !reduced)
+              ctx.globalAlpha = Math.min(
+                1,
+                (cleaner.left / cleaner.duration) * 2,
+              );
+            prop(
+              s.stage === "dirty" ? 11 : 10,
+              p,
+              s.stage === "dirty" ? 14 : 12,
+              -28,
+            );
+            ctx.restore();
+          }
+        },
+        0,
+        tableTile(p).footprint,
+        30,
+      );
       if (s?.stage === "arriving") {
         const p = along(guestRoute(i), 1 - s.left / s.duration);
         add(p, () =>
@@ -639,7 +689,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         0.01,
       );
     });
-    items.sort((a, b) => a.depth - b.depth).forEach((item) => item.draw());
+    depthOrder(items).forEach((item) => item.draw());
     walks.current.endFrame();
     game.seats.forEach((s, i) => {
       if (!s) return;
@@ -746,8 +796,11 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         return { type: "serve" as const, seat: i };
     }
     for (let i = 0; i < game.seats.length; i++) {
-      const p = project(tables[i]);
-      if (Math.abs(x - p.x) < 30 && y > p.y - 70 && y < p.y + 10) {
+      const p = unproject({ x, y }, 28);
+      if (
+        Math.abs(p.x - tables[i].x) < 0.65 &&
+        Math.abs(p.y - tables[i].y) < 0.65
+      ) {
         if (game.seats[i]?.stage === "request")
           return { type: "order" as const, seat: i };
         if (game.seats[i]?.stage === "dirty")

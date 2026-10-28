@@ -14,7 +14,16 @@ test("guests choose, order, receive a clicked dish, and leave a table to clean",
   await expect(order).toBeVisible();
   await page.clock.runFor(10000);
   await expect(order).toBeEnabled();
-  await order.click();
+  // A point above the tabletop used to trigger the broad rectangular hitbox.
+  const tableCanvas = page.locator("canvas"),
+    tableBox = (await tableCanvas.boundingBox())!;
+  await tableCanvas.click({
+    position: { x: tableBox.width / 2, y: (110 / 520) * tableBox.height },
+  });
+  await expect(order).toBeEnabled();
+  await tableCanvas.click({
+    position: { x: tableBox.width / 2, y: (148 / 520) * tableBox.height },
+  });
   await page.clock.runFor(18000);
   const serve = page.getByRole("button", { name: /Serve · 1/ });
   await expect(serve).toBeVisible();

@@ -1,11 +1,8 @@
 import { Art, Sprite } from "./art";
 import type { Point } from "./world";
 
-export const tileSize = { width: 60, height: 30 };
-export const tileToScreen = (p: Point) => ({
-  x: 400 + ((p.x - p.y) * tileSize.width) / 2,
-  y: 116 + ((p.x + p.y) * tileSize.height) / 2,
-});
+import { project as tileToScreen, footprintCorners } from "./isometric";
+export { tileSize, project as tileToScreen } from "./isometric";
 export type TileProp = {
   x: number;
   y: number;
@@ -119,6 +116,10 @@ export const kitchenTile = (p: Point): TileProp => ({
   ground: p.x === 11 ? 0.92 : 0.78,
   footprint: [1, 1],
 });
+export function propHeight(art: Art, prop: TileProp) {
+  const sprite = art[prop.atlas][prop.frame];
+  return (sprite.h * prop.ground * prop.width) / (sprite.w - 4);
+}
 export function drawTileProp(
   ctx: CanvasRenderingContext2D,
   art: Art,
@@ -140,15 +141,10 @@ export function drawTileProp(
   // Every floor prop receives a contact shadow at its actual tile footprint.
   ctx.fillStyle = "#29352724";
   ctx.beginPath();
-  ctx.ellipse(
-    p.x,
-    p.y,
-    prop.footprint[0] * 16,
-    prop.footprint[1] * 7,
-    0,
-    0,
-    Math.PI * 2,
+  footprintCorners(prop, prop.footprint).forEach((q, i) =>
+    i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y),
   );
+  ctx.closePath();
   ctx.fill();
   ctx.drawImage(
     sprite.image,

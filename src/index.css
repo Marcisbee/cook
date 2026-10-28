@@ -148,7 +148,8 @@ header {
   display: block;
   width: min(100%, calc((100dvh - 196px) * 1.53846));
   height: auto;
-  image-rendering: pixelated;
+  image-rendering: auto;
+  aspect-ratio: 800 / 520;
   touch-action: none;
   flex: none;
 }

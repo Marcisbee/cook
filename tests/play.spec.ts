@@ -84,3 +84,51 @@ test("compact mobile shop fits, supports keyboard and preserves purchases", asyn
     page.getByText("2/8 tables · More room for guests"),
   ).toBeVisible();
 });
+
+test("canvas renders at display resolution on large and high-DPI screens, including paused resize", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 2285, height: 1386 },
+    deviceScaleFactor: 2,
+  });
+  const page = await context.newPage();
+  await start(page);
+  await expect(page.getByText("Setting the tables…")).not.toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  const canvas = page.locator("canvas");
+  const resolution = () =>
+    canvas.evaluate((c: HTMLCanvasElement) => {
+      const r = c.getBoundingClientRect();
+      return {
+        width: c.width,
+        height: c.height,
+        expectedWidth: Math.round(r.width * devicePixelRatio),
+        expectedHeight: Math.round(r.height * devicePixelRatio),
+        smoothing: c.getContext("2d")!.imageSmoothingEnabled,
+        css: getComputedStyle(c).imageRendering,
+      };
+    });
+  await expect
+    .poll(async () => {
+      const r = await resolution();
+      return (
+        r.width === r.expectedWidth &&
+        r.height === r.expectedHeight &&
+        r.smoothing &&
+        r.css === "auto"
+      );
+    })
+    .toBe(true);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect
+    .poll(async () => {
+      const r = await resolution();
+      return r.width === r.expectedWidth && r.height === r.expectedHeight;
+    })
+    .toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Resume", exact: true }),
+  ).toBeVisible();
+  await context.close();
+});

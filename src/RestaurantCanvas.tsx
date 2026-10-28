@@ -32,7 +32,42 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
   const [art, setArt] = useState<Art | null>(null),
     [error, setError] = useState(false),
     [hover, setHover] = useState("");
+  const [surface, setSurface] = useState({ width: W, height: H });
   const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
+  useEffect(() => {
+    const canvas = ref.current!;
+    // Keep world coordinates independent of display pixels. Re-measure even
+    // while paused, and when the window moves between different-DPI displays.
+    let density: MediaQueryList;
+    const measure = () => {
+      const bounds = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.round(bounds.width * ratio));
+      const height = Math.max(1, Math.round(bounds.height * ratio));
+      setSurface((previous) =>
+        previous.width === width && previous.height === height
+          ? previous
+          : { width, height },
+      );
+    };
+    const watchDensity = () => {
+      density?.removeEventListener("change", watchDensity);
+      density = window.matchMedia(
+        "(resolution: " + window.devicePixelRatio + "dppx)",
+      );
+      density.addEventListener("change", watchDensity);
+      measure();
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(canvas);
+    window.addEventListener("resize", measure);
+    watchDensity();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+      density.removeEventListener("change", watchDensity);
+    };
+  }, []);
   useEffect(() => {
     let live = true;
     artReady
@@ -47,7 +82,11 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
   useEffect(() => {
     const c = ref.current!,
       ctx = c.getContext("2d")!;
-    ctx.imageSmoothingEnabled = false;
+    if (c.width !== surface.width) c.width = surface.width;
+    if (c.height !== surface.height) c.height = surface.height;
+    ctx.setTransform(surface.width / W, 0, 0, surface.height / H, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -529,7 +568,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
     text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
     ctx.restore();
-  }, [game, art, camera]);
+  }, [game, art, camera, surface]);
   const coords = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     return {

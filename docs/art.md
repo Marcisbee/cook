@@ -1,6 +1,6 @@
 # Restaurant artwork
 
-The game bundles five transparent PNG atlases. No remote runtime assets are required.
+The game bundles seven transparent PNG atlases. No remote runtime assets are required.
 
 | Asset | Grid | Contents |
 | --- | --- | --- |
@@ -8,6 +8,8 @@ The game bundles five transparent PNG atlases. No remote runtime assets are requ
 | `public/art/diners.png` | 4 × 4 | Four diners with four walk frames each |
 | `public/art/actions.png` | 4 × 4 | Stirring, rear waiter walk, wiping and writing |
 | `public/art/diner-actions.png` | 4 × 8 | Four rear diner walks and four seated eating cycles |
+| `public/art/idle-staff.png` | 4 × 4 | Chef and waiter resting gestures, front and rear |
+| `public/art/idle-diners.png` | 4 × 4 | Seated waiting gestures for four diners |
 | `public/art/restaurant.png` | 4 × 3 | Tables, chairs, appliances, counter, plants, tree, produce, prepared and dirty dishes |
 
 The built-in image-generation tool was used; no CLI/API fallback. Source alpha is preserved. `src/art.ts` uses explicit rectangles around complete silhouettes, including artwork crossing nominal grid boundaries. Character frames share a reference height per walk cycle and a body-based ground anchor. All sprite drawing uses a single uniform scale, including width-constrained furniture, so the source proportions are preserved. The original atlas is sampled directly. The renderer sizes its canvas backing store to the displayed size and device pixel ratio, then draws source sprites directly at that resolution with high-quality sampling. Shared logical floor coordinates keep camera movement and hit targets independent of display density. Furniture, people and dishes share depth ordering.
@@ -45,8 +47,16 @@ Tables, dining chairs and service counters are drawn by `src/furniture.ts` using
 
 Walking uses `src/walk.ts`: a registered torso pose over two articulated legs. Alternating contact and swing phases are driven by route distance; stance feet move backward relative to the pelvis at travel speed, while swing feet lift and advance. Source walk frames are retained for stationary poses; repeated same-leg atlas frames no longer drive locomotion. Action atlases still drive service and eating.
 
-## Idle motion
+## Idle poses
 
-`src/idle.ts` animates registered staff and seated diner poses with breathing, weight shifts and occasional settling. The deformation fades to zero below the pelvis, keeping feet and chair contact fixed. Character-specific phase offsets avoid synchronized movement. Game time drives motion, so pause and speed apply consistently; reduced-motion uses an undeformed static pose. Idle motion yields to walking and service animations.
+`src/idle.ts` selects dedicated, redrawn idle poses at a fixed uniform scale. Staff adjust their aprons and collars, move their heads and blink; seated diners raise a hand to their chin and look around. The lower resting pose stays registered while the upper-body sequence plays. There is no per-frame scaling, skewing, strip deformation or synthetic breathing. Timing varies by character. Pause freezes the pose and reduced motion holds the resting frame.
 
-Idle breathing uses a visible 3.2-second shoulder-rise and chest-expansion cycle at normal camera scale. Standing figures have a larger range than seated diners; menu selection retains breathing beneath the menu gesture. Lower-body anchors remain fixed.
+Both new atlases were created with the built-in image-generation tool using the existing characters as identity references. Original transparency is preserved. Complete silhouette bounds are checked against the shipped images.
+
+## Staff idle prompt
+
+Use case: identity-preserve. Reference: existing restaurant characters. Produce a new transparent game idle-animation atlas, EXACTLY 4 columns x 4 rows. All sprites full body, complete shoes and hats, generous transparent gutters. Match reference detailed warm pixel illustration and isometric camera. Fixed size anatomy, identical planted foot locations within each row: NO WALKING, no stretching or inflating bodies. Row1 chef facing southeast/front-right; row2 same chef northwest/back-left; row3 blue shirt ochre apron waiter southeast/front-right; row4 same waiter northwest/back-left. Chef wears white toque green apron; waiter dark curly hair. Each row is four sequential DISTINCT hand-drawn poses of a relaxed idle gesture: frame1 hands relaxed, head neutral; frame2 bends one elbow and lifts hand toward apron/chest, head looks slightly aside; frame3 gently adjusts collar/apron with bent arm and briefly blinks, head dips; frame4 lowers hand halfway and returns gaze. Keep torso silhouette/proportions stable, move arms via joints and redraw head direction and eyes; feet exactly stationary and spaced naturally, both soles on ground. Waiter holds tray level in other hand. No background, ground, shadows, text, objects outside hands, grid lines, scenery. True transparent alpha. All 16 figures completely separated by at least 24 transparent pixels. Consistent scale, lighting, identity, foot baseline.
+
+## Diner idle prompt
+
+Use case: identity-preserve. New transparent idle-animation atlas matching the four reference diners, detailed cozy pixel illustration, fixed southeast/front-right isometric view. Exactly 4 columns x 4 rows, 16 full-body seated sprites WITHOUT chairs or tables. Row1 gray moustache mustard sweater man; row2 dark skin curly bun lavender blouse woman; row3 glasses brown hair teal jacket man; row4 blonde bob burgundy cardigan blue skirt woman. Each row four distinct sequential poses of SAME person waiting at a restaurant: 1 hands resting on lap, neutral face; 2 raise right hand toward chin, elbow bends, head turns slightly toward viewer; 3 hand rests against cheek or chin, blink/soft smile; 4 hand lowers halfway, gaze returns toward table. Feet and seated pelvis exactly fixed in all four frames. Knees bent, shoes below hips, same seated anatomy and scale. Redraw articulated arm/head poses, NO stretching or scaling bodies, NO eating, NO utensils. Every figure wholly separate, at least 24 transparent pixels between silhouettes, complete hair, hands and shoes, transparent outside figures. Consistent identity/style/lighting, no text, labels, grids, backgrounds or shadows.

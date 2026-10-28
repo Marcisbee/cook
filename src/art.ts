@@ -89,6 +89,42 @@ const actionBounds: Bounds[] = [
   [724, 910, 872, 1207],
   [1034, 910, 1180, 1209],
 ];
+const idleStaffBounds: Bounds[] = [
+  [121, 16, 263, 304],
+  [418, 19, 557, 305],
+  [732, 21, 869, 306],
+  [1039, 19, 1177, 305],
+  [120, 321, 256, 601],
+  [427, 321, 563, 601],
+  [740, 321, 879, 601],
+  [1043, 324, 1185, 601],
+  [112, 621, 302, 907],
+  [419, 621, 609, 907],
+  [726, 621, 918, 907],
+  [1036, 621, 1232, 907],
+  [77, 920, 256, 1204],
+  [394, 920, 569, 1204],
+  [703, 921, 878, 1204],
+  [1011, 922, 1186, 1204],
+];
+const idleDinerBounds: Bounds[] = [
+  [124, 27, 257, 305],
+  [421, 27, 561, 305],
+  [720, 28, 864, 305],
+  [1019, 27, 1166, 305],
+  [114, 318, 270, 625],
+  [420, 319, 574, 626],
+  [724, 321, 879, 626],
+  [1033, 319, 1190, 625],
+  [116, 629, 260, 917],
+  [421, 631, 564, 917],
+  [727, 632, 872, 917],
+  [1037, 629, 1181, 917],
+  [97, 926, 271, 1211],
+  [402, 925, 574, 1211],
+  [710, 925, 882, 1211],
+  [1018, 926, 1191, 1211],
+];
 const propBounds: Bounds[] = [
   [27, 39, 373, 372],
   [432, 29, 654, 361],
@@ -181,13 +217,27 @@ export const artReady = Promise.all([
   loadSheet("/art/diners.png", dinerBounds, true),
   loadSheet("/art/actions.png", actionBounds, true),
   loadSheet("/art/diner-actions.png", dinerActionBounds, true),
-]).then(([characters, props, diners, actions, dinerActions]) => ({
-  characters,
-  props,
-  diners,
-  actions,
-  dinerActions,
-}));
+  loadSheet("/art/idle-staff.png", idleStaffBounds, true),
+  loadSheet("/art/idle-diners.png", idleDinerBounds, true),
+]).then(
+  ([
+    characters,
+    props,
+    diners,
+    actions,
+    dinerActions,
+    idleStaff,
+    idleDiners,
+  ]) => ({
+    characters,
+    props,
+    diners,
+    actions,
+    dinerActions,
+    idleStaff,
+    idleDiners,
+  }),
+);
 export type Art = Awaited<typeof artReady>;
 export function drawSprite(
   ctx: CanvasRenderingContext2D,

@@ -206,7 +206,7 @@ test("atlas rectangles retain complete character and furniture silhouettes", asy
   expect(clipped).toEqual([]);
 });
 
-test("idle characters breathe without moving planted feet and respect reduced motion", async ({
+test("idle gestures change poses without moving planted feet and respect reduced motion", async ({
   page,
 }) => {
   await page.clock.install();
@@ -240,9 +240,13 @@ test("idle characters breathe without moving planted feet and respect reduced mo
   await page.clock.runFor(100);
   const feet = await crop("feet"),
     body = await crop("body");
-  await page.clock.runFor(900);
-  expect(await crop("feet")).toBe(feet);
-  expect(await crop("body")).not.toBe(body);
+  const poses = new Set([body]);
+  for (let i = 0; i < 8; i++) {
+    await page.clock.runFor(500);
+    expect(await crop("feet")).toBe(feet);
+    poses.add(await crop("body"));
+  }
+  expect(poses.size).toBeGreaterThan(1);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.clock.runFor(100);
   const still = await crop("body");

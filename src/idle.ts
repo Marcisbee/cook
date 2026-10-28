@@ -1,58 +1,45 @@
-import { Sprite } from "./art";
+import { Sprite, drawSprite } from "./art";
 
-// Deform the upper silhouette around planted feet (or a seated pelvis).
-// Sampling one registered pose avoids cycling through walking/eating frames.
+// Idle gestures are drawn poses. Their scale and anatomy remain unchanged.
 export function drawIdle(
   ctx: CanvasRenderingContext2D,
-  s: Sprite,
+  frames: Sprite[],
   height: number,
   flip: boolean,
   time: number,
   seed: number,
   seated: boolean,
+  reduced: boolean,
 ) {
-  const scale = height / s.referenceHeight;
-  const cycle = time + seed * 1.73;
-  const inhale = Math.sin((cycle * Math.PI) / 1.6);
-  const breath = inhale * (seated ? 1.7 : 2.6);
-  const sway = Math.sin((cycle * Math.PI) / 3.4) * (seated ? 0.9 : 1.6);
-  const beat = ((cycle % 9) + 9) % 9;
-  const settle =
-    beat < 2 ? Math.sin(beat * Math.PI) * Math.sin((beat * Math.PI) / 2) : 0;
-  const weight = (v: number) => {
-    const t = Math.max(0, Math.min(1, (v - (seated ? 0.36 : 0.23)) / 0.6));
-    return t * t * (3 - 2 * t);
-  };
-  const yAt = (row: number) => {
-    const y = (row - s.anchorY) * scale;
-    return (
-      y - breath * weight(-y / height) - settle * 1.2 * weight(-y / height)
-    );
-  };
+  const phase = (((time + seed * 0.71) % 4) + 4) % 4;
+  const index = reduced
+    ? 0
+    : phase < 1
+      ? 0
+      : phase < 1.25
+        ? 1
+        : phase < 1.95
+          ? 2
+          : phase < 2.2
+            ? 3
+            : phase < 2.5
+              ? 2
+              : phase < 2.75
+                ? 1
+                : 0;
+  const seam = -height * (seated ? 0.35 : 0.25);
+  // Keep the registered resting legs while the authored upper-body gesture plays.
+  // Both passes use the same uniform scale; there is no warping or interpolation.
   ctx.save();
-  if (flip) ctx.scale(-1, 1);
-  // Contiguous mapped strips preserve the complete silhouette, including hats.
-  const strip = Math.max(1, Math.round(s.referenceHeight / 40));
-  for (let row = 0; row < s.h; row += strip) {
-    const next = Math.min(s.h, row + strip),
-      top = yAt(row),
-      bottom = yAt(next);
-    const influence = weight(((s.anchorY - (row + next) / 2) * scale) / height);
-    const chest = Math.sin(Math.PI * influence);
-    const expansion = 1 + (inhale + 1) * 0.035 * chest;
-    ctx.drawImage(
-      s.image,
-      s.x,
-      s.y + row,
-      s.w,
-      next - row,
-      -s.anchorX * scale * expansion +
-        sway * influence +
-        settle * 1.1 * influence,
-      top,
-      s.w * scale * expansion,
-      bottom - top,
-    );
-  }
+  ctx.beginPath();
+  ctx.rect(-height, seam, height * 2, height);
+  ctx.clip();
+  drawSprite(ctx, frames[0], 0, 0, height, flip);
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-height, -height * 1.2, height * 2, height * 1.2 + seam);
+  ctx.clip();
+  drawSprite(ctx, frames[index], 0, 0, height, flip);
   ctx.restore();
 }

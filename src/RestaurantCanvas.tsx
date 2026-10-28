@@ -417,15 +417,21 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           pants,
           role === "guest" && id % 4 === 3,
         );
-      } else if (!moving && (!action || action === "choose") && !reduced) {
+      } else if (!moving && (!action || action === "choose")) {
+        const row = role === "chef" ? (back ? 1 : 0) : back ? 3 : 2;
+        const poses =
+          role === "guest"
+            ? art.idleDiners.slice((id % 4) * 4, (id % 4) * 4 + 4)
+            : art.idleStaff.slice(row * 4, row * 4 + 4);
         drawIdle(
           ctx,
-          sprite,
+          poses,
           role === "chef" ? 70 : seated ? 48 : 60,
           flip,
           game.time,
           id + (role === "chef" ? 7 : role === "waiter" ? 13 : 0),
           seated,
+          reduced,
         );
       } else
         drawSprite(

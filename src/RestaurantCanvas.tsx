@@ -256,27 +256,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       }
       // A foundation, timber seams and planted borders make a place, not a floating grid.
       box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
-      const backA = project({ x: -0.5, y: -0.5 }),
-        backB = project({ x: 11.5, y: -0.5 }),
-        backC = project({ x: -0.5, y: 9.5 });
-      poly(
-        [
-          [backA.x, backA.y - 90],
-          [backB.x, backB.y - 90],
-          [backB.x, backB.y],
-          [backA.x, backA.y],
-        ],
-        "#dfcaab",
-      );
-      poly(
-        [
-          [backA.x, backA.y - 90],
-          [backC.x, backC.y - 90],
-          [backC.x, backC.y],
-          [backA.x, backA.y],
-        ],
-        "#d1bfa4",
-      );
       for (let x = 0; x < 12; x++)
         for (let y = 0; y < 10; y++) {
           const kitchen = x >= 7;
@@ -298,12 +277,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             rect(p.x + 9, p.y + 5, 5, 1, "#c49a69");
           }
         }
-      for (let x = 0; x < 12; x++) {
-        box({ x, y: -0.47 }, 1, 0.08, 15, "#5a806a", "#6c8b71", "#75937a");
-      }
-      for (let y = 0; y < 10; y++) {
-        box({ x: -0.47, y }, 0.08, 1, 15, "#557963", "#65866c", "#77967d");
-      }
       interior(ctx, project, art);
       ctx.restore();
       const background = document.createElement("canvas");

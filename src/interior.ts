@@ -1,12 +1,12 @@
 import { Point } from "./world";
-import { Art, drawSprite } from "./art";
+import { Art } from "./art";
 
 // Detail stays in floor/wall coordinates, so borders, boards and fixtures retain
 // the same perspective as furniture and navigation at every camera zoom.
 export function interior(
   ctx: CanvasRenderingContext2D,
   project: (p: Point) => Point,
-  art: Art | null,
+  _art: Art | null,
 ) {
   const face = (points: Point[], color: string) => {
     ctx.beginPath();
@@ -69,6 +69,46 @@ export function interior(
     floor(-0.23, y, 0.09, 0.09, "#b7a478");
     floor(0.62, y, 0.09, 0.09, "#b7a478");
   }
+  // Wall solids use the same floor grid as their fixtures: inner face, cap,
+  // and exposed end return. The two caps meet at one continuous corner.
+  const raised = (x: number, y: number, z: number) => {
+    const p = project({ x, y });
+    return { x: p.x, y: p.y - z };
+  };
+  for (const side of [0, 1]) {
+    const length = side ? 11.5 : 9.5;
+    const point = (t: number, outer: boolean, z: number) =>
+      side
+        ? raised(t, outer ? -0.74 : -0.5, z)
+        : raised(outer ? -0.74 : -0.5, t, z);
+    face(
+      [
+        point(-0.5, false, 0),
+        point(length, false, 0),
+        point(length, false, 90),
+        point(-0.5, false, 90),
+      ],
+      side ? "#d5c3a1" : "#c7b793",
+    );
+    face(
+      [
+        point(-0.74, true, 90),
+        point(length, true, 90),
+        point(length, false, 90),
+        point(-0.74, false, 90),
+      ],
+      "#9b7851",
+    );
+    face(
+      [
+        point(length, false, 0),
+        point(length, true, 0),
+        point(length, true, 90),
+        point(length, false, 90),
+      ],
+      side ? "#896b49" : "#70583d",
+    );
+  }
   // Panels and mouldings on both back walls.
   const wall = (side: number, t: number, z: number) => {
     const q = project(side ? { x: t, y: -0.51 } : { x: -0.51, y: t });
@@ -93,12 +133,12 @@ export function interior(
     );
   for (const side of [0, 1]) {
     const length = side ? 12 : 10;
-    panel(side, -0.5, length, 0, 27, side ? "#35554c" : "#406357");
-    panel(side, -0.5, length, 25, 2, "#a59060");
-    panel(side, -0.5, length, 29, 1, "#e0c99d");
+    panel(side, -0.5, length, 0, 27, side ? "#465a48" : "#3e5141");
+    panel(side, -0.5, length, 25, 2, "#8a7450");
+    panel(side, -0.5, length, 29, 1, "#bda37b");
     panel(side, -0.5, length, 0, 4, "#293e37");
-    panel(side, -0.5, length, 86, 4, "#8a6b48");
-    panel(side, -0.5, length, 84, 2, "#e2cda9");
+    panel(side, -0.5, length, 86, 4, "#725437");
+    panel(side, -0.5, length, 84, 2, "#b49b70");
     for (let t = -0.38; t < length - 0.5; t += 0.8) {
       panel(side, t, 0.65, 6, 15, "#29473f");
       panel(side, t + 0.04, 0.57, 7, 13, side ? "#426658" : "#4e7260");
@@ -134,9 +174,14 @@ export function interior(
     panel(0, t - 0.08, 2.01, 30, 2.2, "#e0cba0");
     panel(0, t - 0.06, 1.97, 80, 2, "#e0cba0");
   }
-  if (art) {
-    const menu = wall(1, 3.3, 32);
-    drawSprite(ctx, art.decor[6], menu.x, menu.y, 37);
+  // Chalkboard and its frame are drawn on the wall rather than importing an
+  // already-isometric sprite with a different vanishing direction.
+  panel(1, 2.5, 1.25, 36, 28, "#6f5035");
+  panel(1, 2.57, 1.11, 38, 24, "#293f36");
+  panel(1, 2.58, 1.09, 61, 1, "#b09465");
+  for (let i = 0; i < 5; i++) {
+    panel(1, 2.7, 0.7 - (i % 3) * 0.12, 56 - i * 3.5, 0.55, "#c2c8aa");
+    panel(1, 3.4, 0.12, 56 - i * 3.5, 0.55, "#c2c8aa");
   }
   // Shelves, crockery, framed menu and brass lamps on the kitchen wall.
   for (const t of [6.9, 9.1]) {
@@ -158,14 +203,10 @@ export function interior(
   }
   for (const t of [1, 5.7, 11]) {
     const p = wall(1, t, 58);
-    ctx.fillStyle = "#6c5037";
-    ctx.fillRect(p.x - 1, p.y, 2, 11);
-    ctx.fillStyle = "#c19d5e";
-    ctx.fillRect(p.x - 4, p.y - 1, 8, 3);
-    ctx.fillStyle = "#efdcb0";
-    ctx.fillRect(p.x - 3, p.y - 10, 6, 9);
-    ctx.fillStyle = "#fff0ca";
-    ctx.fillRect(p.x - 1, p.y - 8, 2, 6);
+    panel(1, t - 0.035, 0.07, 47, 11, "#6c5037");
+    panel(1, t - 0.14, 0.28, 57, 2, "#aa8d54");
+    panel(1, t - 0.1, 0.2, 59, 9, "#e6d6ab");
+    panel(1, t - 0.015, 0.035, 60, 7, "#fff0ca");
     const light = ctx.createRadialGradient(p.x, p.y - 5, 1, p.x, p.y - 5, 21);
     light.addColorStop(0, "#f8d28a26");
     light.addColorStop(1, "#f8d28a00");

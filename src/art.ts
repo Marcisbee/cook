@@ -139,15 +139,10 @@ const propBounds: Bounds[] = [
   [786, 812, 1025, 1006],
   [1138, 801, 1391, 1013],
 ];
-const decorBounds: Bounds[] = [
-  [37, 23, 357, 578],
-  [464, 16, 731, 549],
-  [848, 95, 982, 530],
-  [1103, 155, 1505, 549],
-  [41, 634, 512, 986],
-  [548, 568, 696, 982],
-  [842, 589, 1136, 991],
-  [1253, 616, 1475, 953],
+const timberBounds: Bounds[] = [
+  [215, 47, 625, 676],
+  [869, 148, 1402, 665],
+  [1723, 68, 1853, 658],
 ];
 export type Sprite = {
   image: HTMLImageElement;
@@ -229,7 +224,7 @@ export const artReady = Promise.all([
   loadSheet("/art/diner-actions.png", dinerActionBounds, true),
   loadSheet("/art/idle-staff.png", idleStaffBounds, true),
   loadSheet("/art/idle-diners.png", idleDinerBounds, true),
-  loadSheet("/art/decor.png", decorBounds),
+  loadSheet("/art/timber.png", timberBounds),
   loadSheet("/art/furnishings.png", [
     [81, 125, 444, 443],
     [576, 98, 791, 436],
@@ -249,7 +244,7 @@ export const artReady = Promise.all([
     dinerActions,
     idleStaff,
     idleDiners,
-    decor,
+    timber,
     furnishings,
   ]) => ({
     characters,
@@ -259,7 +254,7 @@ export const artReady = Promise.all([
     dinerActions,
     idleStaff,
     idleDiners,
-    decor,
+    timber,
     furnishings,
   }),
 );

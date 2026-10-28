@@ -9,7 +9,7 @@ export const tileToScreen = (p: Point) => ({
 export type TileProp = {
   x: number;
   y: number;
-  atlas: "decor" | "furnishings";
+  atlas: "timber" | "furnishings";
   frame: number;
   width: number;
   ground: number;
@@ -22,19 +22,19 @@ export const fixtureTiles: TileProp[] = [
   {
     x: 5,
     y: 0,
-    atlas: "decor",
+    atlas: "timber",
     frame: 0,
-    width: 39,
-    ground: 0.95,
+    width: 48,
+    ground: 0.91,
     footprint: [1, 1],
     solid: true,
   },
   {
     x: 0,
     y: 0,
-    atlas: "decor",
-    frame: 5,
-    width: 24,
+    atlas: "timber",
+    frame: 2,
+    width: 20,
     ground: 0.96,
     footprint: [0.5, 0.5],
     solid: true,
@@ -42,9 +42,9 @@ export const fixtureTiles: TileProp[] = [
   {
     x: 0,
     y: 9,
-    atlas: "decor",
-    frame: 5,
-    width: 24,
+    atlas: "timber",
+    frame: 2,
+    width: 20,
     ground: 0.96,
     footprint: [0.5, 0.5],
     solid: true,
@@ -52,8 +52,8 @@ export const fixtureTiles: TileProp[] = [
   {
     x: 7,
     y: 12,
-    atlas: "decor",
-    frame: 3,
+    atlas: "timber",
+    frame: 1,
     width: 65,
     ground: 0.87,
     footprint: [1.5, 0.7],

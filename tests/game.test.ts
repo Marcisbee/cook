@@ -106,8 +106,6 @@ test("firing a worker preserves its delivery request for another worker", () => 
   g.cash = 500;
   g = update(g, { type: "hire", id: "luna" });
   g = until(g, (g) => g.seats[0]?.stage === "ready");
-  g.actors.owner.phase = "home";
-  g.actors.owner.left = g.actors.owner.duration = 20;
   g = update(g, { type: "serve", seat: 0 });
   g = run(g, 0.1);
   assert.ok(g.actors.luna.job);
@@ -131,4 +129,49 @@ test("saves resume queued work and migrate old economy without losing tables or 
   assert.equal(readSave("{broken"), null);
   assert.equal(readSave(JSON.stringify({ ...g, cash: -1 })), null);
   assert.equal(readSave(JSON.stringify({ ...g, actors: {} })), null);
+});
+
+test("hired waiters own every table job while the owner stays in the kitchen", () => {
+  let g = newGame("Roles", "Cook");
+  g.cash = 500;
+  g = update(g, { type: "seat" });
+  g = update(g, { type: "hire", id: "luna" });
+  const jobs = new Set<string>();
+  for (let i = 0; i < 4000 && g.served < 2; i++) {
+    g.seats.forEach((s, seat) => {
+      if (s?.stage === "ready") g = update(g, { type: "serve", seat });
+    });
+    g = update(g, { type: "tick", seconds: 0.05 });
+    assert.equal(g.actors.owner.job, undefined);
+    assert.equal(g.actors.owner.phase, "idle");
+    if (g.actors.luna.job) jobs.add(g.actors.luna.job.kind);
+  }
+  assert.equal(g.served, 2);
+  assert.ok(jobs.has("order"));
+  assert.ok(jobs.has("serve"));
+  assert.ok(jobs.has("clean"));
+});
+
+test("busy waiter keeps deliveries queued; dismissing the last waiter restores owner service", () => {
+  let g = newGame("Roles", "Cook");
+  g.cash = 500;
+  g = update(g, { type: "seat" });
+  g = update(g, { type: "hire", id: "luna" });
+  g = until(
+    g,
+    (g) =>
+      g.seats.every((s) => s?.stage === "ready") &&
+      g.actors.luna.phase === "idle",
+  );
+  g = update(g, { type: "serve", seat: 0 });
+  g = update(g, { type: "serve", seat: 1 });
+  g = run(g, 0.1);
+  assert.equal(g.actors.luna.job?.seat, 0);
+  assert.equal(g.queue[0]?.seat, 1);
+  assert.equal(g.actors.owner.job, undefined);
+  g = update(g, { type: "fire", id: "luna" });
+  g = run(g, 0.1);
+  assert.equal(g.actors.owner.job?.seat, 0);
+  g = until(g, (g) => g.served === 2);
+  assert.equal(g.served, 2);
 });

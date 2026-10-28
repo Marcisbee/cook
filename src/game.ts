@@ -397,8 +397,13 @@ export function update(game: Game, action: Action): Game {
     if (s.stage === "ready" && g.upgrades.includes("bell"))
       enqueue(g, "serve", i);
   });
-  // FIFO dispatch: clicks remain queued while every available worker is busy.
+  // Hired waiters own the floor. The owner is a fallback only when no waiter
+  // remains, rather than stealing queued jobs while the waiter is busy.
+  const hasWaiter = g.staff.some(
+    (id) => candidates.find((person) => person.id === id)?.role === "waiter",
+  );
   for (const [id, a] of Object.entries(g.actors)) {
+    if (id === "owner" && hasWaiter) continue;
     if (a.phase !== "idle" || g.seats.some((s) => s?.worker === id)) continue;
     let j: Job | undefined;
     while (g.queue.length) {

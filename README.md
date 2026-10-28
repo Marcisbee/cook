@@ -10,7 +10,7 @@ A playable restaurant game built around an isometric canvas world, animated char
 4. Click the prepared dish on the kitchen counter or its **Food pass** button. An available worker picks it up and delivers it. Requests remain queued while workers are busy.
 5. Guests eat, pay and leave a dirty table. Click **CLEAN** before another guest can use it.
 
-Waiters take orders and clean automatically. Delivery still requires selecting a prepared meal. Drag the world to pan, and use the camera buttons to zoom or reset. Table and food actions also have keyboard-accessible buttons below the canvas. **P** pauses; **Esc** closes a panel. Speed changes affect work and wages together.
+Waiters take orders and clean automatically. With a waiter hired, the owner stays in the kitchen and table jobs wait for an available waiter. A trip already underway finishes before the owner returns to cooking. If the last waiter leaves, the owner can handle table jobs again. Delivery still requires selecting a prepared meal. Drag the world to pan, and use the camera buttons to zoom or reset. Table and food actions also have keyboard-accessible buttons below the canvas. **P** pauses; **Esc** closes a panel. Speed changes affect work and wages together.
 
 The compact **Shop** contains tables, publicity, staff, dishes and upgrades. QR menus bypass order-taking visits; a quick stove speeds cooking; a dishwasher speeds cleanup; a later dispatch bell automatically queues prepared dishes. Hire an extra chef to keep the kitchen running while the owner works the floor. Staff charge displayed wages each game minute and leave if unpaid. The owner remains available without money.
 

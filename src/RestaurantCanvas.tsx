@@ -400,22 +400,35 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       ctx.translate(q.x, q.y);
       ctx.rotate(lean);
       if (moving && !reduced) {
-        const pants =
-          role !== "guest"
-            ? "#414039"
-            : ["#514132", "#e6d4b4", "#394657", "#53627a"][id % 4];
+        const palettes = [
+          { shirt: "#bd823b", trousers: "#514132", skin: "#e7ae7f" },
+          { shirt: "#ac84be", trousers: "#e6d4b4", skin: "#a66843" },
+          { shirt: "#387d83", trousers: "#394657", skin: "#e7ae7f" },
+          {
+            shirt: "#9c3940",
+            trousers: "#53627a",
+            skin: "#e7ae7f",
+            skirt: true,
+          },
+        ];
         drawWalk(
           ctx,
           sprite,
-          0,
-          0,
           role === "chef" ? 70 : 60,
           flip,
           dx,
           dy,
           distance,
-          pants,
-          role === "guest" && id % 4 === 3,
+          role === "guest"
+            ? palettes[id % 4]
+            : {
+                shirt: role === "chef" ? "#eee0c6" : "#3c6c98",
+                trousers: "#414039",
+                skin: "#e7ae7f",
+                apron: role === "chef" ? "#707958" : "#d19b38",
+                chef: role === "chef",
+                tray: role === "waiter",
+              },
         );
       } else if (!moving && (!action || action === "choose")) {
         const row = role === "chef" ? (back ? 1 : 0) : back ? 3 : 2;

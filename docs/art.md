@@ -45,7 +45,7 @@ Action frames use explicit silhouette bounds, shared row scales and body anchors
 
 Tables, dining chairs and service counters are drawn by `src/furniture.ts` using the same 2:1 world projection as navigation. Chair backs occupy the negative-X side, leaving the positive-X side facing the table. Counter tops and cabinet faces share the floor axes, including the second pickup counter.
 
-Walking uses `src/walk.ts`: a registered torso pose over two articulated legs. Alternating contact and swing phases are driven by route distance; stance feet move backward relative to the pelvis at travel speed, while swing feet lift and advance. Source walk frames are retained for stationary poses; repeated same-leg atlas frames no longer drive locomotion. Action atlases still drive service and eating.
+Walking uses `src/walk.ts`: a complete jointed body projected onto the same floor axes as the restaurant. The original head preserves each character's identity. Shoulders, arms, hips, knees, shoes and clothing are drawn as one coordinated rig, with costume palettes matching the source art. Stance feet cancel world travel; the opposite foot bends and lifts through a swing phase. Route distance controls the stride, so staff speed affects cadence. Arms counter-swing and the waiter keeps a level tray. No torso bitmap is stretched or skewed. Existing drawn poses continue to handle idle gestures, cooking, service and seated eating.
 
 ## Idle poses
 

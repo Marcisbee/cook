@@ -5,6 +5,7 @@ import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
 import { interior } from "./interior";
+import { WalkCycles } from "./walk";
 import {
   tileToScreen,
   fixtureTiles,
@@ -24,6 +25,7 @@ export const platePoint = (seat: number) => {
 };
 type Props = { game: Game; dispatch: (a: Action) => void };
 export default function RestaurantCanvas({ game, dispatch }: Props) {
+  const walks = useRef(new WalkCycles());
   const ref = useRef<HTMLCanvasElement>(null),
     drag = useRef<{
       x: number;
@@ -88,6 +90,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     };
   }, []);
   useEffect(() => {
+    walks.current.beginFrame();
     const c = ref.current!,
       ctx = c.getContext("2d")!;
     if (c.width !== surface.width) c.width = surface.width;
@@ -343,8 +346,8 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       const back = dx < 0 || dy < 0;
       // NW is the authored rear view; mirror it for NE. Front views face SE.
       let flip = back ? dy < 0 : dy > 0;
-      // Loop complete walking poses on the simulation clock. Route changes must
-      // not restart the cycle; pause and game speed still control playback.
+      const walkFrame = walks.current.frame(`${role}:${id}`, p, moving);
+      // Action poses have their own timing; locomotion follows ground travel.
       const frame = reduced
         ? 1
         : moving
@@ -379,6 +382,19 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         sprite = art.actions[8 + frame];
       if (role === "waiter" && action === "order")
         sprite = art.actions[12 + frame];
+      if (moving) {
+        const sheet =
+          role === "chef"
+            ? art.walkChef
+            : role === "waiter"
+              ? art.walkWaiter
+              : id % 4 < 2
+                ? art.walkDinersA
+                : art.walkDinersB;
+        const row = (role === "guest" ? (id % 2) * 2 : 0) + (back ? 1 : 0);
+        sprite = sheet[row * 8 + (reduced ? 2 : walkFrame)];
+        flip = back ? dy < 0 : dy > 0;
+      }
       diamond(p, 0.45, 0.35, "#57452e25");
       ctx.save();
       const lean =
@@ -632,6 +648,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       );
     });
     items.sort((a, b) => a.depth - b.depth).forEach((item) => item.draw());
+    walks.current.endFrame();
     game.seats.forEach((s, i) => {
       if (!s) return;
       const q = project(tables[i]),

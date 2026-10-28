@@ -1,3 +1,9 @@
+import {
+  walkChefBounds,
+  walkWaiterBounds,
+  walkDinersABounds,
+  walkDinersBBounds,
+} from "./walkBounds";
 // Explicit source rectangles follow complete silhouettes, not nominal grid cells.
 // Several supplied figures cross their grid boundaries (notably waiter heads).
 type Bounds = [number, number, number, number];
@@ -158,6 +164,8 @@ function loadSheet(
   url: string,
   bounds: Bounds[],
   animated = false,
+  framesPerRow = 4,
+  groundedWalk = false,
 ): Promise<Sprite[]> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -179,8 +187,10 @@ function loadSheet(
             let total = 0,
               weight = 0;
             for (
-              let yy = Math.round(top + (bottom - top) * 0.6);
-              yy < top + (bottom - top) * 0.78;
+              let yy = Math.round(
+                top + (bottom - top) * (groundedWalk ? 0.35 : 0.6),
+              );
+              yy < top + (bottom - top) * (groundedWalk ? 0.5 : 0.78);
               yy++
             )
               for (let xx = left; xx <= right; xx++) {
@@ -193,8 +203,8 @@ function loadSheet(
             if (weight) anchorX = total / weight - x;
           }
           const row = bounds.slice(
-            Math.floor(index / 4) * 4,
-            Math.floor(index / 4) * 4 + 4,
+            Math.floor(index / framesPerRow) * framesPerRow,
+            Math.floor(index / framesPerRow) * framesPerRow + framesPerRow,
           );
           return {
             image,
@@ -203,10 +213,15 @@ function loadSheet(
             w,
             h,
             anchorX,
-            anchorY: bottom - y,
-            referenceHeight: animated
-              ? Math.max(...row.map((b) => b[3] - b[1] + 1))
-              : bottom - top + 1,
+            anchorY:
+              (groundedWalk ? Math.max(...row.map((b) => b[3])) : bottom) - y,
+            referenceHeight: groundedWalk
+              ? Math.max(...row.map((b) => b[3])) -
+                Math.min(...row.map((b) => b[1])) +
+                1
+              : animated
+                ? Math.max(...row.map((b) => b[3] - b[1] + 1))
+                : bottom - top + 1,
           };
         }),
       );
@@ -217,6 +232,10 @@ function loadSheet(
   });
 }
 export const artReady = Promise.all([
+  loadSheet("/art/walk-chef.png", walkChefBounds, true, 8, true),
+  loadSheet("/art/walk-waiter.png", walkWaiterBounds, true, 8, true),
+  loadSheet("/art/walk-diners-a.png", walkDinersABounds, true, 8, true),
+  loadSheet("/art/walk-diners-b.png", walkDinersBBounds, true, 8, true),
   loadSheet("/art/characters.png", characterBounds, true),
   loadSheet("/art/restaurant.png", propBounds),
   loadSheet("/art/diners.png", dinerBounds, true),
@@ -237,6 +256,10 @@ export const artReady = Promise.all([
   ]),
 ]).then(
   ([
+    walkChef,
+    walkWaiter,
+    walkDinersA,
+    walkDinersB,
     characters,
     props,
     diners,
@@ -247,6 +270,10 @@ export const artReady = Promise.all([
     timber,
     furnishings,
   ]) => ({
+    walkChef,
+    walkWaiter,
+    walkDinersA,
+    walkDinersB,
     characters,
     props,
     diners,

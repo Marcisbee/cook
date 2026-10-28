@@ -4,7 +4,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "test": "tsx --test tests/game.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "check": "tsc --noEmit"
   },

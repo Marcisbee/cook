@@ -29,7 +29,10 @@ test("guests choose, order, receive a clicked dish, and leave a table to clean",
   const canvas = page.locator("canvas"),
     box = (await canvas.boundingBox())!;
   await canvas.click({
-    position: { x: (616 / 800) * box.width, y: (189.2 / 520) * box.height },
+    position: {
+      x: box.width / 2 + ((616 - 400) / 520) * box.height,
+      y: (189.2 / 520) * box.height,
+    },
   });
   await expect(serve).not.toBeVisible();
   await page.clock.runFor(15000);
@@ -220,13 +223,13 @@ test("idle gestures change poses without moving planted feet and respect reduced
           ? { x: 642, y: 254, w: 20, h: 8 }
           : { x: 637, y: 190, w: 35, h: 45 };
       const c = document.createElement("canvas"),
-        sx = canvas.width / 800,
+        sx = canvas.height / 520,
         sy = canvas.height / 520;
       c.width = Math.round(box.w * sx);
       c.height = Math.round(box.h * sy);
       c.getContext("2d")!.drawImage(
         canvas,
-        Math.round(box.x * sx),
+        Math.round((canvas.width - 800 * sx) / 2 + box.x * sx),
         Math.round(box.y * sy),
         c.width,
         c.height,

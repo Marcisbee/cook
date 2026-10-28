@@ -135,22 +135,8 @@ export function interior(
     panel(0, t - 0.06, 1.97, 80, 2, "#e0cba0");
   }
   if (art) {
-    const cabinet = project({ x: 5.1, y: -0.4 });
-    drawSprite(ctx, art.decor[0], cabinet.x, cabinet.y, 84);
     const menu = wall(1, 3.3, 32);
     drawSprite(ctx, art.decor[6], menu.x, menu.y, 37);
-    for (const y of [0.1, 9.4]) {
-      const q = project({ x: -0.65, y });
-      drawSprite(ctx, art.decor[5], q.x, q.y, 85);
-    }
-    for (const x of [3.4, 10.5]) {
-      const q = project({ x, y: 11.5 });
-      drawSprite(ctx, art.decor[4], q.x, q.y, 30);
-    }
-    const bench = project({ x: 7, y: 12.2 });
-    drawSprite(ctx, art.decor[3], bench.x, bench.y, 48);
-    const lamp = project({ x: -0.8, y: 10.6 });
-    drawSprite(ctx, art.decor[2], lamp.x, lamp.y, 65);
   }
   // Shelves, crockery, framed menu and brass lamps on the kitchen wall.
   for (const t of [6.9, 9.1]) {

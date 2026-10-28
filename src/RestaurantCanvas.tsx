@@ -5,12 +5,19 @@ import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
 import { interior } from "./interior";
+import {
+  tileToScreen,
+  fixtureTiles,
+  gardenTiles,
+  groundKind,
+  drawTileProp,
+  tableTile,
+  chairTile,
+  kitchenTile,
+} from "./tiles";
 const W = 800,
   H = 520;
-export const project = (p: Point) => ({
-  x: 400 + (p.x - p.y) * 30,
-  y: 116 + (p.x + p.y) * 15,
-});
+export const project = tileToScreen;
 export const platePoint = (seat: number) => {
   const p = project(foodSpot(seat));
   return { x: p.x, y: p.y - 35 };
@@ -85,7 +92,14 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       ctx = c.getContext("2d")!;
     if (c.width !== surface.width) c.width = surface.width;
     if (c.height !== surface.height) c.height = surface.height;
-    ctx.setTransform(surface.width / W, 0, 0, surface.height / H, 0, 0);
+    ctx.setTransform(
+      surface.height / H,
+      0,
+      0,
+      surface.height / H,
+      (surface.width - (W * surface.height) / H) / 2,
+      0,
+    );
     ctx.imageSmoothingEnabled = false;
     ctx.imageSmoothingQuality = "high";
     const reduced = window.matchMedia(
@@ -188,39 +202,54 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       camera.zoom,
     ].join(":");
     if (scenery.current?.key !== sceneryKey || scenery.current.art !== art) {
-      rect(0, 0, W, H, "#718765");
+      rect(-1600, -1200, 4000, 3000, "#617649");
       ctx.save();
       ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
       ctx.scale(camera.zoom, camera.zoom);
       ctx.translate(-W / 2, -H / 2);
-      if (art) {
-        // Continuous garden shares the world camera; the room sits inside it.
-        ctx.drawImage(art.garden[0].image, -180, -130, 1160, 773.33);
-      }
-      // Cobbled terrace and stone edging around the restaurant footprint.
-      for (let x = -2; x < 14; x++)
-        for (let y = -2; y < 13; y++) {
-          if (x >= 0 && x < 12 && y >= 0 && y < 10) continue;
-          if (x < 0 && y < 0) continue;
-          const shades = ["#a9a597", "#b4ad9e", "#bcb4a4", "#a5a394"];
-          diamond({ x, y }, 0.97, 0.97, shades[(x * 3 + y + 100) % 4]);
-          for (let a = 0; a < 3; a++)
-            for (let b = 0; b < 3; b++) {
-              diamond(
-                { x: x - 0.32 + a * 0.32, y: y - 0.32 + b * 0.32 },
-                0.29,
-                0.29,
-                shades[(x + y + a + b + 100) % 4],
-              );
+      // Ground is a tile map, not a painted scene. All props share these cells.
+      for (let x = -28; x < 38; x++)
+        for (let y = -28; y < 38; y++) {
+          const kind = groundKind(x, y);
+          if (kind === "room") continue;
+          const seed = Math.abs(x * 137 + y * 71);
+          const palette =
+            kind === "stone"
+              ? ["#b7ac93", "#bcb399", "#afa58d"]
+              : kind === "path"
+                ? ["#977b55", "#9d805a", "#a3865e"]
+                : ["#71894e", "#738b50", "#70874e"];
+          diamond({ x, y }, 1.02, 1.02, palette[seed % 3]);
+          if (kind === "stone") {
+            for (let a = 0; a < 3; a++)
+              for (let b = 0; b < 3; b++)
+                diamond(
+                  { x: x - 0.32 + a * 0.32, y: y - 0.32 + b * 0.32 },
+                  0.29,
+                  0.29,
+                  palette[(a + b + seed) % 3],
+                );
+          } else {
+            for (let k = 0; k < 16; k++) {
               const q = project({
-                x: x - 0.32 + a * 0.32,
-                y: y - 0.32 + b * 0.32,
+                x: x + ((seed + k * 37) % 91) / 100 - 0.45,
+                y: y + ((seed + k * 61) % 91) / 100 - 0.45,
               });
-              rect(q.x - 2, q.y - 1, 2, 0.5, "#cbc2af");
+              rect(
+                q.x,
+                q.y,
+                1 + (k % 2),
+                1,
+                kind === "grass" ? (k % 3 ? "#82995c" : "#5e7742") : "#b19670",
+              );
             }
-
-          diamond({ x: x - 0.16, y: y + 0.12 }, 0.34, 0.015, "#c7bfac");
+          }
         }
+      if (art)
+        gardenTiles
+          .filter((p) => p.x < 0 || p.y < 0)
+          .sort((a, b) => a.x + a.y - b.x - b.y)
+          .forEach((p) => drawTileProp(ctx, art, p));
       for (let x = 2; x < 12; x++) {
         box({ x, y: 10.6 }, 0.98, 0.34, 8, "#c6b494", "#82775f", "#a09276");
         box({ x, y: 10.6 }, 1.03, 0.42, 10, "#dfcba7", "#b3a07e", "#c5b28f");
@@ -285,7 +314,14 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(scenery.current.canvas, 0, 0);
-    ctx.setTransform(surface.width / W, 0, 0, surface.height / H, 0, 0);
+    ctx.setTransform(
+      surface.height / H,
+      0,
+      0,
+      surface.height / H,
+      (surface.width - (W * surface.height) / H) / 2,
+      0,
+    );
     ctx.save();
     ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
     ctx.scale(camera.zoom, camera.zoom);
@@ -440,32 +476,15 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         ctx.restore();
       }
     };
-    // A shared furniture atlas and explicit widths keep kitchen equipment in
-    // the same unit scale as the tables, chairs and walking characters.
     if (art) {
-      for (let x = 8; x < 12; x++) {
-        const p = { x, y: 0 };
-        add(p, () => {
-          const q = project(p);
-          drawSprite(
-            ctx,
-            art.furnishings[x === 11 ? 3 : 2],
-            q.x,
-            q.y + 14,
-            0,
-            false,
-            x === 11 ? 34 : 45,
-          );
-        });
-      }
       for (const p of [
-        { x: 12.7, y: 6 },
-        { x: 7, y: 11.7 },
-      ]) {
-        add(p, () => {
-          const q = project(p);
-          drawSprite(ctx, art.furnishings[5], q.x, q.y, 31);
-        });
+        ...fixtureTiles,
+        ...gardenTiles.filter((p) => p.x >= 0 && p.y >= 0),
+      ])
+        add(p, () => drawTileProp(ctx, art, p));
+      for (let x = 8; x < 12; x++) {
+        const p = kitchenTile({ x, y: 0 });
+        add(p, () => drawTileProp(ctx, art, p));
       }
     }
     for (let y = 0; y < 5; y++)
@@ -482,8 +501,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         chair = { x: p.x - 1, y: p.y };
       add(chair, () => {
         const q = project(chair);
-        if (art)
-          drawSprite(ctx, art.furnishings[1], q.x, q.y + 8, 0, false, 27);
+        if (art) drawTileProp(ctx, art, chairTile(chair));
         else furniture(ctx, project, chair, "chair");
       });
       if (s && !["arriving", "dirty"].includes(s.stage))
@@ -508,7 +526,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       add(p, () => {
         if (art) {
           const q = project(p);
-          drawSprite(ctx, art.furnishings[0], q.x, q.y + 10, 0, false, 64);
+          drawTileProp(ctx, art, tableTile(p));
         } else furniture(ctx, project, p, "table");
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
@@ -725,7 +743,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     const r = e.currentTarget.getBoundingClientRect();
     return {
       x:
-        (((e.clientX - r.left) * W) / r.width - W / 2 - camera.x) /
+        (((e.clientX - r.left - r.width / 2) * H) / r.height - camera.x) /
           camera.zoom +
         W / 2,
       y:
@@ -757,25 +775,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     return null;
   };
   return (
-    <div
-      className="world"
-      style={
-        art
-          ? (() => {
-              const canvas = ref.current;
-              const scale = (canvas?.getBoundingClientRect().width || W) / W;
-              const width = canvas?.parentElement?.clientWidth || W;
-              const height = canvas?.parentElement?.clientHeight || H;
-              return {
-                backgroundImage: 'url("/art/garden.png")',
-                backgroundRepeat: "no-repeat",
-                backgroundSize: `${1160 * scale * camera.zoom}px ${773.33 * scale * camera.zoom}px`,
-                backgroundPosition: `${width / 2 + (-580 * camera.zoom + camera.x) * scale}px ${height / 2 + (-390 * camera.zoom + camera.y) * scale}px`,
-              };
-            })()
-          : undefined
-      }
-    >
+    <div className="world">
       <canvas
         ref={ref}
         width={W}
@@ -802,7 +802,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             const r = e.currentTarget.getBoundingClientRect();
             setCamera((c) => ({
               ...c,
-              x: Math.max(-300, Math.min(300, d.ox + (dx * W) / r.width)),
+              x: Math.max(-300, Math.min(300, d.ox + (dx * H) / r.height)),
               y: Math.max(-200, Math.min(200, d.oy + (dy * H) / r.height)),
             }));
           }

@@ -1,3 +1,4 @@
+import { fixtureTiles } from "./tiles";
 export type Point = { x: number; y: number };
 export const tables: Point[] = [
   { x: 2, y: 2 },
@@ -24,6 +25,7 @@ export const pickupSpot = (seat: number): Point =>
   seat < 4 ? { x: 6, y: seat + 1 } : { x: 9, y: seat - 1 };
 export const pass = { x: 6, y: 5 };
 const blocked = (x: number, y: number) =>
+  fixtureTiles.some((p) => p.solid && p.x === x && p.y === y) ||
   tables.some((t) => (t.x === x || t.x - 1 === x) && t.y === y) ||
   (x === 7 && y < 5) ||
   (x === 10 && y >= 3 && y <= 6) ||

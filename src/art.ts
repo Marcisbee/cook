@@ -240,7 +240,6 @@ export const artReady = Promise.all([
     [1057, 667, 1364, 902],
     [1434, 485, 1554, 898],
   ]),
-  loadSheet("/art/garden.png", [[0, 0, 1535, 1023]]),
 ]).then(
   ([
     characters,
@@ -252,7 +251,6 @@ export const artReady = Promise.all([
     idleDiners,
     decor,
     furnishings,
-    garden,
   ]) => ({
     characters,
     props,
@@ -263,7 +261,6 @@ export const artReady = Promise.all([
     idleDiners,
     decor,
     furnishings,
-    garden,
   }),
 );
 export type Art = Awaited<typeof artReady>;

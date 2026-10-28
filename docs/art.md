@@ -2,7 +2,15 @@
 
 The visual direction follows the seven user-supplied isometric pixel-art references attached to the task on 2026-10-28: smaller adult-proportioned figures, warm timber, cream stone, forest-green upholstery and panelling, brass fixtures, detailed plants and restrained parchment UI. This replaces the previous large-headed illustration direction.
 
-Thirteen local PNG atlases in `public/art/` were created with the built-in image tool using the supplied references. No reference screenshot is used as a game background. The room is rendered by the restaurant simulation.
+Fourteen local PNG atlases in `public/art/` were created with the built-in image tool using the supplied references. No reference screenshot is used as a game background. The room is rendered by the restaurant simulation.
+
+## Environmental materials
+
+`environment.png` is an opaque four-column, two-row material atlas guided by the three additional interior/exterior references. Row one contains oak boards, sandstone paving, grass and earth. Row two contains plaster, sage panelling, limestone masonry and ceramic tiles. `src/materials.ts` projects source regions onto the shared floor and wall axes. Material patches and architectural details are sampled on a half-world-unit pixel grid, then drawn without smoothing. Ground patterns continue across tile boundaries; the existing scenery cache retains the assembled result until the camera, display or artwork changes. Counters and the terrace use the same materials while preserving their collision and dish positions.
+
+Exact generation prompt:
+
+Create a production pixel-art material atlas guided by the attached game's environmental art: fine deliberate pixel clusters, warm sandstone, muted sage greens, walnut timber, hand-crafted old-town restaurant. EXACTLY 4 COLUMNS x 2 ROWS of EIGHT SQUARE MATERIAL SWATCHES filling entire image edge to edge, equal squares, NO gaps, NO labels, NO borders. All swatches are flat orthographic material textures, NOT isometric objects, NOT perspective, NO scene or furniture. Row1 left to right: 1 warm honey oak floorboards with staggered long plank joints, subtle knots and grain; 2 irregular pale sandstone cobblestone paving with mortar, small edge chips and muted cream/taupe variations; 3 dense mossy meadow grass in fine clustered olive/sage blades and occasional tiny leaves, no flowers; 4 packed warm earth garden path with tiny embedded stones, restrained mottled texture. Row2 left to right: 1 warm pale peach lime plaster with subtle aged patches and sparse fine cracks, broad quiet surface; 2 dark sage painted wooden wall wainscot with narrow vertical panels, subtle grain and raised rectangular mouldings, straight elevation; 3 warm cream limestone ashlar masonry in staggered courses, fine dark joints and chipped highlighted edges; 4 ivory and sage ceramic checker floor, four by four small squares with fine grout, subtle glazed pixel highlights and wear. Each swatch tiles seamlessly on all four edges. Match the restrained fine pixel-art texture of the references, not noisy photorealism, no smooth vector gradients, no heavy outlines. Crisp limited-palette pixel clusters. Opaque atlas.
 
 ## Layout and rendering
 

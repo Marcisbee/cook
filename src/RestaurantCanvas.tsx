@@ -5,6 +5,7 @@ import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
 import { interior } from "./interior";
+import { groundMaterial, material } from "./materials";
 import { WalkCycles } from "./walk";
 import {
   tileToScreen,
@@ -215,38 +216,15 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         for (let y = -28; y < 38; y++) {
           const kind = groundKind(x, y);
           if (kind === "room") continue;
-          const seed = Math.abs(x * 137 + y * 71);
-          const palette =
-            kind === "stone"
-              ? ["#b7ac93", "#bcb399", "#afa58d"]
-              : kind === "path"
-                ? ["#977b55", "#9d805a", "#a3865e"]
-                : ["#71894e", "#738b50", "#70874e"];
-          diamond({ x, y }, 1.02, 1.02, palette[seed % 3]);
-          if (kind === "stone") {
-            for (let a = 0; a < 3; a++)
-              for (let b = 0; b < 3; b++)
-                diamond(
-                  { x: x - 0.32 + a * 0.32, y: y - 0.32 + b * 0.32 },
-                  0.29,
-                  0.29,
-                  palette[(a + b + seed) % 3],
-                );
-          } else {
-            for (let k = 0; k < 16; k++) {
-              const q = project({
-                x: x + ((seed + k * 37) % 91) / 100 - 0.45,
-                y: y + ((seed + k * 61) % 91) / 100 - 0.45,
-              });
-              rect(
-                q.x,
-                q.y,
-                1 + (k % 2),
-                1,
-                kind === "grass" ? (k % 3 ? "#82995c" : "#5e7742") : "#b19670",
-              );
-            }
-          }
+          groundMaterial(
+            ctx,
+            art,
+            project,
+            x,
+            y,
+            kind === "stone" ? 1 : kind === "path" ? 3 : 2,
+            kind === "grass" ? 4 : 2,
+          );
         }
       if (art)
         gardenTiles
@@ -256,6 +234,16 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       for (let x = 2; x < 12; x++) {
         box({ x, y: 10.6 }, 0.98, 0.34, 8, "#c6b494", "#82775f", "#a09276");
         box({ x, y: 10.6 }, 1.03, 0.42, 10, "#dfcba7", "#b3a07e", "#c5b28f");
+        const a = project({ x: x - 0.49, y: 10.77 }),
+          b = project({ x: x + 0.49, y: 10.77 });
+        material(
+          ctx,
+          art,
+          6,
+          { x: a.x, y: a.y - 8 },
+          { x: b.x - a.x, y: b.y - a.y },
+          { x: 0, y: 8 },
+        );
       }
       // A foundation, timber seams and planted borders make a place, not a floating grid.
       box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
@@ -477,10 +465,12 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       }
     }
     for (let y = 0; y < 5; y++)
-      add({ x: 7, y }, () => furniture(ctx, project, { x: 7, y }, "counter"));
+      add({ x: 7, y }, () =>
+        furniture(ctx, project, { x: 7, y }, "counter", art),
+      );
     for (let seat = 4; seat < game.seats.length; seat++) {
       const p = foodSpot(seat);
-      add(p, () => furniture(ctx, project, p, "counter"));
+      add(p, () => furniture(ctx, project, p, "counter", art));
     }
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 22));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.

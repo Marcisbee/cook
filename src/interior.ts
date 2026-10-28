@@ -1,12 +1,29 @@
 import { Point } from "./world";
 import { Art } from "./art";
+import { material, groundMaterial } from "./materials";
 
 // Detail stays in floor/wall coordinates, so borders, boards and fixtures retain
 // the same perspective as furniture and navigation at every camera zoom.
 export function interior(
   ctx: CanvasRenderingContext2D,
   project: (p: Point) => Point,
-  _art: Art | null,
+  art: Art | null,
+) {
+  // Draw architectural detail to the same fine pixel grid as material patches.
+  // The outer scenery cache handles camera changes; typography stays full-res.
+  const pixels = document.createElement("canvas");
+  pixels.width = 1600;
+  pixels.height = 1040;
+  const painter = pixels.getContext("2d")!;
+  painter.scale(2, 2);
+  painter.imageSmoothingEnabled = false;
+  paintInterior(painter, project, art);
+  ctx.drawImage(pixels, 0, 0, 800, 520);
+}
+function paintInterior(
+  ctx: CanvasRenderingContext2D,
+  project: (p: Point) => Point,
+  art: Art | null,
 ) {
   const face = (points: Point[], color: string) => {
     ctx.beginPath();
@@ -35,27 +52,9 @@ export function interior(
       }),
       color,
     );
-  // Narrow staggered oak planks, with grain following the boards rather than
-  // screen-horizontal marks. The kitchen has glazed green/ivory tile borders.
-  for (let x = 0; x < 7; x++)
-    for (let y = 0; y < 10; y++) {
-      for (let n = 0; n < 4; n++) {
-        const a = x - 0.5 + n * 0.25,
-          b = y - 0.5;
-        const palette = ["#a4774d", "#af8054", "#9b704b", "#b0865a"];
-        floor(a, b, 0.246, 0.99, palette[(x * 3 + y + n) % 4]);
-        for (let k = 0; k < 3; k++)
-          floor(
-            a + 0.035 + k * 0.055,
-            b + 0.1 + ((x + y + n + k) % 4) * 0.12,
-            0.009,
-            0.27,
-            k % 2 ? "#b68b60" : "#916746",
-          );
-        floor(a + 0.015, b + 0.03, 0.012, 0.02, "#6b4e38");
-        floor(a + 0.015, b + 0.93, 0.012, 0.02, "#6b4e38");
-      }
-    }
+  for (let x = 0; x < 12; x++)
+    for (let y = 0; y < 10; y++)
+      groundMaterial(ctx, art, project, x, y, x < 7 ? 0 : 7, x < 7 ? 2 : 4);
   for (let y = 0; y < 10; y++) {
     floor(6.39, y - 0.5, 0.1, 1, "#d5c39b");
     floor(6.49, y - 0.5, 0.12, 1, "#365952");
@@ -145,11 +144,22 @@ export function interior(
       panel(side, t, 0.65, 21, 0.6, "#a28c57");
       panel(side, t + 0.02, 0.025, 7, 13, "#6f8364");
     }
-    // Fine plaster variation and dado trim.
-    for (let i = 0; i < 120; i++) {
-      const t = -0.45 + (((i * 37) % 100) / 100) * (length - 0.1),
-        z = 33 + ((i * 17) % 48);
-      panel(side, t, 0.025, z, 0.65, i % 2 ? "#d3bf9e" : "#e2ceb0");
+    // Continuous textured wall strips, sampled in wall coordinates. Material
+    // orientation follows each wall, with a shared height and corner baseline.
+    for (let t = -0.5; t < length - 0.5; t += 2) {
+      const a = wall(side, t, 84),
+        b = wall(side, t + 2, 84);
+      material(ctx, art, 4, a, { x: b.x - a.x, y: b.y - a.y }, { x: 0, y: 54 });
+      const base = wall(side, t, 25),
+        end = wall(side, t + 2, 25);
+      material(
+        ctx,
+        art,
+        5,
+        base,
+        { x: end.x - base.x, y: end.y - base.y },
+        { x: 0, y: 21 },
+      );
     }
   }
   // Windows are built on the wall plane, with identical scale and depth.

@@ -1,3 +1,5 @@
+import type { Art } from "./art";
+import { material } from "./materials";
 import { Point } from "./world";
 type Project = (p: Point) => Point;
 // All surfaces use floor coordinates and a vertical height, including chair backs.
@@ -6,6 +8,7 @@ export function furniture(
   project: Project,
   p: Point,
   kind: "table" | "chair" | "counter",
+  art: Art | null = null,
 ) {
   const at = (x: number, y: number, z: number) => {
     const q = project({ x: p.x + x, y: p.y + y });
@@ -78,6 +81,31 @@ export function furniture(
         i % 2 ? "#b17b47" : "#a36d3f",
       );
     }
+    for (const side of [0, 1]) {
+      const a = side ? at(0.466, -0.46, 27) : at(-0.46, 0.466, 27);
+      const b = side ? at(0.466, 0.46, 27) : at(0.46, 0.466, 27);
+      material(
+        ctx,
+        art,
+        5,
+        { x: a[0], y: a[1] },
+        { x: b[0] - a[0], y: b[1] - a[1] },
+        { x: 0, y: 27 },
+        [0, 0, 0.5, 1],
+      );
+    }
+    const a = at(-0.5, -0.5, 30),
+      b = at(0.5, -0.5, 30),
+      e = at(-0.5, 0.5, 30);
+    material(
+      ctx,
+      art,
+      6,
+      { x: a[0], y: a[1] },
+      { x: b[0] - a[0], y: b[1] - a[1] },
+      { x: e[0] - a[0], y: e[1] - a[1] },
+      [0.05, 0.08, 0.35, 0.27],
+    );
     return;
   }
   if (kind === "chair") {

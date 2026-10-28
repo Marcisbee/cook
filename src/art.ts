@@ -232,6 +232,7 @@ function loadSheet(
   });
 }
 export const artReady = Promise.all([
+  loadSheet("/art/environment.png", [[0, 0, 1671, 940]]),
   loadSheet("/art/walk-chef.png", walkChefBounds, true, 8, true),
   loadSheet("/art/walk-waiter.png", walkWaiterBounds, true, 8, true),
   loadSheet("/art/walk-diners-a.png", walkDinersABounds, true, 8, true),
@@ -256,6 +257,7 @@ export const artReady = Promise.all([
   ]),
 ]).then(
   ([
+    environment,
     walkChef,
     walkWaiter,
     walkDinersA,
@@ -270,6 +272,7 @@ export const artReady = Promise.all([
     timber,
     furnishings,
   ]) => ({
+    environment,
     walkChef,
     walkWaiter,
     walkDinersA,

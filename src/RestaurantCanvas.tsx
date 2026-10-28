@@ -308,6 +308,9 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       "#fff0cb",
       8,
     );
+    const entry = project({ x: 1, y: 10 });
+    diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
+    text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
     const items: { depth: number; draw: () => void }[] = [];
     const add = (p: Point, draw: () => void, bias = 0) =>
       items.push({ depth: p.x + p.y + bias, draw });
@@ -376,7 +379,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       add(p, () => prop(8, p, h, 12));
     for (const p of [
       { x: 12, y: 3 },
-      { x: 12, y: 8 },
+      { x: 12, y: 5 },
       { x: 7, y: 11 },
     ])
       add(p, () => prop(7, p, 40));
@@ -386,19 +389,19 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           x === 11 ? 5 : x === 10 ? 4 : 2,
           { x, y: 0 },
           x === 11 ? 76 : 52,
-          6,
+          15,
           58,
         );
       });
     for (let y = 0; y < 5; y++)
-      add({ x: 7, y }, () => prop(6, { x: 7, y }, 43, 7, 58));
+      add({ x: 7, y }, () => prop(6, { x: 7, y }, 43, 15, 58));
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 34));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.
     tables.forEach((p, i) => {
       if (i >= game.seats.length) return;
       const s = game.seats[i],
         chair = { x: p.x - 1, y: p.y };
-      add(chair, () => prop(1, chair, 35, 3, 30));
+      add(chair, () => prop(1, chair, 35, 7, 30));
       if (s && !["arriving", "dirty"].includes(s.stage))
         add(
           chair,
@@ -415,7 +418,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           0.05,
         );
       add(p, () => {
-        prop(0, p, 43, 8, 60);
+        prop(0, p, 43, 15, 60);
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
         if (s?.stage === "eating" || s?.stage === "dirty")
@@ -564,9 +567,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         rect(p.x + 14, p.y - 26, 2, 3, "#46604d");
         rect(p.x + 17, p.y - 27, 2, 2, "#46604d");
       });
-    const entry = project({ x: 1, y: 10 });
-    diamond({ x: 1, y: 9 }, 1.6, 0.6, "#668976");
-    text("WELCOME", entry.x, entry.y - 13, "#fff2ca", 8);
     ctx.restore();
   }, [game, art, camera, surface]);
   const coords = (e: React.PointerEvent<HTMLCanvasElement>) => {

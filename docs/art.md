@@ -8,7 +8,7 @@ The game bundles three transparent PNG atlases. No remote runtime assets are req
 | `public/art/diners.png` | 4 × 4 | Four diners with four walk frames each |
 | `public/art/restaurant.png` | 4 × 3 | Tables, chairs, appliances, counter, plants, tree, produce, prepared and dirty dishes |
 
-The built-in image-generation tool was used; no CLI/API fallback. Source alpha is preserved. `src/art.ts` locates opaque bounds within each cell, anchors sprites at their feet and samples the original atlas directly. The renderer sizes its canvas backing store to the displayed size and device pixel ratio, then draws source sprites directly at that resolution with high-quality sampling. Shared logical floor coordinates keep camera movement and hit targets independent of display density. Furniture, people and dishes share depth ordering.
+The built-in image-generation tool was used; no CLI/API fallback. Source alpha is preserved. `src/art.ts` uses explicit rectangles around complete silhouettes, including artwork crossing nominal grid boundaries. Character frames share a reference height per walk cycle and a body-based ground anchor. All sprite drawing uses a single uniform scale, including width-constrained furniture, so the source proportions are preserved. The original atlas is sampled directly. The renderer sizes its canvas backing store to the displayed size and device pixel ratio, then draws source sprites directly at that resolution with high-quality sampling. Shared logical floor coordinates keep camera movement and hit targets independent of display density. Furniture, people and dishes share depth ordering.
 
 ## Character prompt
 

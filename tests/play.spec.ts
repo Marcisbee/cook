@@ -132,3 +132,76 @@ test("canvas renders at display resolution on large and high-DPI screens, includ
   ).toBeVisible();
   await context.close();
 });
+
+test("atlas rectangles retain complete character and furniture silhouettes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const clipped = await page.evaluate(async () => {
+    const { artReady } = await import("/src/art.ts");
+    const art = await artReady;
+    const failures: string[] = [];
+    for (const [name, sprites] of Object.entries(art) as [string, any[]][]) {
+      const image = sprites[0].image,
+        canvas = document.createElement("canvas");
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(image, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const seen = new Uint8Array(canvas.width * canvas.height),
+        stack = new Int32Array(seen.length);
+      // Check actual connected silhouettes in the shipped artwork, independent of
+      // atlas metadata. A crop must contain the whole component, not just its cell.
+      for (let k = 0; k < seen.length; k++) {
+        if (seen[k] || data[k * 4 + 3] < 16) continue;
+        let n = 1,
+          count = 0,
+          left = canvas.width,
+          top = canvas.height,
+          right = 0,
+          bottom = 0;
+        stack[0] = k;
+        seen[k] = 1;
+        while (n) {
+          const i = stack[--n],
+            x = i % canvas.width,
+            y = Math.floor(i / canvas.width);
+          count++;
+          left = Math.min(left, x);
+          top = Math.min(top, y);
+          right = Math.max(right, x);
+          bottom = Math.max(bottom, y);
+          for (const j of [
+            x ? i - 1 : -1,
+            x < canvas.width - 1 ? i + 1 : -1,
+            i - canvas.width,
+            i + canvas.width,
+          ])
+            if (
+              j >= 0 &&
+              j < seen.length &&
+              !seen[j] &&
+              data[j * 4 + 3] >= 16
+            ) {
+              seen[j] = 1;
+              stack[n++] = j;
+            }
+        }
+        if (
+          count > 1000 &&
+          !sprites.some(
+            (s) =>
+              s.x <= left &&
+              s.y <= top &&
+              s.x + s.w > right &&
+              s.y + s.h > bottom,
+          )
+        )
+          failures.push(name + ": " + [left, top, right, bottom].join(","));
+      }
+    }
+    return failures;
+  });
+  expect(clipped).toEqual([]);
+});

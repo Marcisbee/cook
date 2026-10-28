@@ -46,9 +46,14 @@ export function drawWalk(
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   for (const { hip, foot } of legs) {
+    const reach = Math.hypot(foot.x - hip.x, foot.y - 2 - hip.y);
+    const bend = Math.sqrt(
+      Math.max(0, (height * 0.15) ** 2 - (reach / 2) ** 2),
+    );
+    const facing = forward.x < 0 ? -1 : 1;
     const knee = {
-      x: (hip.x + foot.x) / 2 + forward.x * 0.035,
-      y: (hip.y + foot.y) / 2 - 1,
+      x: (hip.x + foot.x) / 2 + facing * bend,
+      y: (hip.y + foot.y - 2) / 2 - bend * 0.15,
     };
     for (const [color, width] of [
       ["#3d302c", 7],
@@ -62,6 +67,13 @@ export function drawWalk(
       ctx.lineTo(foot.x, foot.y - 2);
       ctx.stroke();
     }
+    ctx.strokeStyle = "#ffffff20";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(hip.x - 1, hip.y);
+    ctx.lineTo(knee.x - 1, knee.y);
+    ctx.lineTo(foot.x - 1, foot.y - 3);
+    ctx.stroke();
     ctx.fillStyle = "#49362b";
     ctx.beginPath();
     ctx.ellipse(

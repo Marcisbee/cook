@@ -41,11 +41,11 @@ Edit this sprite atlas only to add generous transparent gutters between every sp
 
 Action frames use explicit silhouette bounds, shared row scales and body anchors. The generated diner rear views face northeast (despite the requested northwest); the renderer mirrors them accordingly. The waiter rear view faces northwest. Eating frames share the chair's ground anchor. Cooking, collection, placement and cleanup follow actual simulation phases, including pause and speed. Reduced motion holds action poses and suppresses decorative sway while retaining essential travel.
 
-## Projected furniture and walking rig
+## Projected furniture and sprite animation
 
 Tables, dining chairs and service counters are drawn by `src/furniture.ts` using the same 2:1 world projection as navigation. Chair backs occupy the negative-X side, leaving the positive-X side facing the table. Counter tops and cabinet faces share the floor axes, including the second pickup counter.
 
-Walking uses `src/walk.ts`: a complete jointed body projected onto the same floor axes as the restaurant. The original head preserves each character's identity. Shoulders, arms, hips, knees, shoes and clothing are drawn as one coordinated rig, with costume palettes matching the source art. Stance feet cancel world travel; the opposite foot bends and lifts through a swing phase. Route distance controls the stride, so staff speed affects cadence. Arms counter-swing and the waiter keeps a level tray. No torso bitmap is stretched or skewed. Existing drawn poses continue to handle idle gestures, cooking, service and seated eating.
+Walking plays complete character frames from the front and rear atlases. A four-frame cycle advances with route distance; each row shares a reference scale and foot anchor. Chef, waiter and all four diner identities use their own directional sprites. The procedural body rig has been removed. No body parts are replaced, stretched or skewed while walking. Existing pose sheets handle idle gestures, cooking, service and seated eating.
 
 ## Idle poses
 

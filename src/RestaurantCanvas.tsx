@@ -11,7 +11,6 @@ import {
 } from "./world";
 import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
-import { drawWalk } from "./walk";
 import { drawIdle } from "./idle";
 const W = 800,
   H = 520;
@@ -357,13 +356,17 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       const back = dx < 0 || dy < 0;
       // NW is the authored rear view; mirror it for NE. Front views face SE.
       let flip = back ? dy < 0 : dy > 0;
-      const frame =
-        !reduced &&
-        (action === "cook" || action === "eat" || (role === "waiter" && action))
-          ? Math.floor(
-              game.time * (moving ? 8 : action === "eat" ? 3 : 6) + id,
-            ) % 4
-          : 1;
+      // Whole-body atlas frames share a scale and foot anchor. Distance drives
+      // the walk cycle so changing staff speed also changes the cadence.
+      const frame = reduced
+        ? 1
+        : moving
+          ? Math.floor((distance / 1.6) * 4) % 4
+          : action === "cook" ||
+              action === "eat" ||
+              (role === "waiter" && action)
+            ? Math.floor(game.time * (action === "eat" ? 3 : 6) + id) % 4
+            : 1;
       let sprite =
         role === "guest"
           ? art.diners[(id % 4) * 4 + frame]
@@ -399,38 +402,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           : 0;
       ctx.translate(q.x, q.y);
       ctx.rotate(lean);
-      if (moving && !reduced) {
-        const palettes = [
-          { shirt: "#bd823b", trousers: "#514132", skin: "#e7ae7f" },
-          { shirt: "#ac84be", trousers: "#e6d4b4", skin: "#a66843" },
-          { shirt: "#387d83", trousers: "#394657", skin: "#e7ae7f" },
-          {
-            shirt: "#9c3940",
-            trousers: "#53627a",
-            skin: "#e7ae7f",
-            skirt: true,
-          },
-        ];
-        drawWalk(
-          ctx,
-          sprite,
-          role === "chef" ? 70 : 60,
-          flip,
-          dx,
-          dy,
-          distance,
-          role === "guest"
-            ? palettes[id % 4]
-            : {
-                shirt: role === "chef" ? "#eee0c6" : "#3c6c98",
-                trousers: "#414039",
-                skin: "#e7ae7f",
-                apron: role === "chef" ? "#707958" : "#d19b38",
-                chef: role === "chef",
-                tray: role === "waiter",
-              },
-        );
-      } else if (!moving && (!action || action === "choose")) {
+      if (!moving && (!action || action === "choose")) {
         const row = role === "chef" ? (back ? 1 : 0) : back ? 3 : 2;
         const poses =
           role === "guest"

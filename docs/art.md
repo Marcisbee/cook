@@ -6,7 +6,7 @@ Fourteen local PNG atlases in `public/art/` were created with the built-in image
 
 ## Environmental materials
 
-`environment.png` is an opaque four-column, two-row material atlas guided by the three additional interior/exterior references. Row one contains oak boards, sandstone paving, grass and earth. Row two contains plaster, sage panelling, limestone masonry and ceramic tiles. `src/materials.ts` projects source regions onto the shared floor and wall axes. Material patches and architectural details are sampled on a half-world-unit pixel grid, then drawn without smoothing. Ground patterns continue across tile boundaries; the existing scenery cache retains the assembled result until the camera, display or artwork changes. Counters and the terrace use the same materials while preserving their collision and dish positions.
+`environment.png` is an opaque four-column, two-row material atlas guided by the three additional interior/exterior references. Row one contains oak boards, sandstone paving, grass and earth. Row two contains plaster, sage panelling, limestone masonry and ceramic tiles. `src/materials.ts` projects source regions onto the shared floor and wall axes. Material patches and architectural details are sampled on a half-world-unit pixel grid, then drawn without smoothing. Ground patterns continue across tile boundaries; the existing scenery cache retains the assembled result until the camera, display or artwork changes. The terrace uses the masonry material. Counters use dedicated pixel-drawn walnut cabinetry and ivory worktops in `src/counter.ts`, with drawers, brass pulls, a recessed plinth and exposed end panels only at run ends. Counter modules retain their collision and dish positions.
 
 Exact generation prompt:
 

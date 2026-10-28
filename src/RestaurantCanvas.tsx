@@ -466,11 +466,13 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     }
     for (let y = 0; y < 5; y++)
       add({ x: 7, y }, () =>
-        furniture(ctx, project, { x: 7, y }, "counter", art),
+        furniture(ctx, project, { x: 7, y }, "counter", y === 4),
       );
     for (let seat = 4; seat < game.seats.length; seat++) {
       const p = foodSpot(seat);
-      add(p, () => furniture(ctx, project, p, "counter", art));
+      add(p, () =>
+        furniture(ctx, project, p, "counter", seat === game.seats.length - 1),
+      );
     }
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 22));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.

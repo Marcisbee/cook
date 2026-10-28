@@ -1,5 +1,4 @@
-import type { Art } from "./art";
-import { material } from "./materials";
+import { drawCounter } from "./counter";
 import { Point } from "./world";
 type Project = (p: Point) => Point;
 // All surfaces use floor coordinates and a vertical height, including chair backs.
@@ -8,7 +7,7 @@ export function furniture(
   project: Project,
   p: Point,
   kind: "table" | "chair" | "counter",
-  art: Art | null = null,
+  counterEnd = true,
 ) {
   const at = (x: number, y: number, z: number) => {
     const q = project({ x: p.x + x, y: p.y + y });
@@ -46,66 +45,7 @@ export function furniture(
   const leg = (x: number, y: number, h: number) =>
     slab(x, y, 0.09, 0.09, h, h, "#b18b59", "#674631", "#90613e");
   if (kind === "counter") {
-    slab(0, 0, 0.92, 0.92, 27, 27, "#b4824d", "#986138", "#b47e45");
-    // Recessed oak panels follow both visible cabinet planes.
-    for (const side of [0, 1])
-      for (let i = 0; i < 3; i++) {
-        const t = -0.36 + i * 0.25;
-        face(
-          side === 0
-            ? [
-                at(t, 0.465, 23),
-                at(t + 0.2, 0.465, 23),
-                at(t + 0.2, 0.465, 4),
-                at(t, 0.465, 4),
-              ]
-            : [
-                at(0.465, t, 23),
-                at(0.465, t + 0.2, 23),
-                at(0.465, t + 0.2, 4),
-                at(0.465, t, 4),
-              ],
-          side === 0 ? "#a76c3e" : "#946740",
-        );
-      }
-    slab(0, 0, 1, 1, 30, 3, "#f0e5cb", "#c8bba1", "#dbceb4");
-    for (let i = 0; i < 9; i++) {
-      const t = -0.39 + i * 0.095;
-      face(
-        [
-          at(t, 0.466, 22),
-          at(t + 0.008, 0.466, 22),
-          at(t + 0.008, 0.466, 5),
-          at(t, 0.466, 5),
-        ],
-        i % 2 ? "#b17b47" : "#a36d3f",
-      );
-    }
-    for (const side of [0, 1]) {
-      const a = side ? at(0.466, -0.46, 27) : at(-0.46, 0.466, 27);
-      const b = side ? at(0.466, 0.46, 27) : at(0.46, 0.466, 27);
-      material(
-        ctx,
-        art,
-        5,
-        { x: a[0], y: a[1] },
-        { x: b[0] - a[0], y: b[1] - a[1] },
-        { x: 0, y: 27 },
-        [0, 0, 0.5, 1],
-      );
-    }
-    const a = at(-0.5, -0.5, 30),
-      b = at(0.5, -0.5, 30),
-      e = at(-0.5, 0.5, 30);
-    material(
-      ctx,
-      art,
-      6,
-      { x: a[0], y: a[1] },
-      { x: b[0] - a[0], y: b[1] - a[1] },
-      { x: e[0] - a[0], y: e[1] - a[1] },
-      [0.05, 0.08, 0.35, 0.27],
-    );
+    drawCounter(ctx, project(p), counterEnd);
     return;
   }
   if (kind === "chair") {

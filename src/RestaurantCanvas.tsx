@@ -1,7 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Game, Action, isQueued } from "./game";
-import { Point, tables, along, guestRoute, cookSpot, foodSpot } from "./world";
+import {
+  pathLength,
+  Point,
+  tables,
+  along,
+  guestRoute,
+  cookSpot,
+  foodSpot,
+} from "./world";
 import { artReady, Art, drawSprite } from "./art";
+import { furniture } from "./furniture";
+import { drawWalk } from "./walk";
 const W = 800,
   H = 520;
 export const project = (p: Point) => ({
@@ -10,7 +20,7 @@ export const project = (p: Point) => ({
 });
 export const platePoint = (seat: number) => {
   const p = project(foodSpot(seat));
-  return { x: p.x, y: p.y - 27 };
+  return { x: p.x, y: p.y - 35 };
 };
 type Props = { game: Game; dispatch: (a: Action) => void };
 export default function RestaurantCanvas({ game, dispatch }: Props) {
@@ -334,6 +344,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       action?: "cook" | "order" | "clean" | "eat" | "choose",
       seated = false,
       target?: Point,
+      distance = 0,
     ) => {
       if (!art) return;
       const q = project(p);
@@ -347,10 +358,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       let flip = back ? dy < 0 : dy > 0;
       const frame =
         !reduced &&
-        (moving ||
-          action === "cook" ||
-          action === "eat" ||
-          (role === "waiter" && action))
+        (action === "cook" || action === "eat" || (role === "waiter" && action))
           ? Math.floor(
               game.time * (moving ? 8 : action === "eat" ? 3 : 6) + id,
             ) % 4
@@ -394,14 +402,33 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           : 0;
       ctx.translate(q.x, q.y);
       ctx.rotate(lean);
-      drawSprite(
-        ctx,
-        sprite,
-        0,
-        breath,
-        role === "chef" ? 70 : seated ? 48 : 60,
-        flip,
-      );
+      if (moving && !reduced) {
+        const pants =
+          role !== "guest"
+            ? "#414039"
+            : ["#514132", "#e6d4b4", "#394657", "#53627a"][id % 4];
+        drawWalk(
+          ctx,
+          sprite,
+          0,
+          0,
+          role === "chef" ? 70 : 60,
+          flip,
+          dx,
+          dy,
+          distance,
+          pants,
+          role === "guest" && id % 4 === 3,
+        );
+      } else
+        drawSprite(
+          ctx,
+          sprite,
+          0,
+          breath,
+          role === "chef" ? 70 : seated ? 48 : 60,
+          flip,
+        );
       ctx.restore();
       if (
         role === "chef" &&
@@ -460,10 +487,10 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         );
       });
     for (let y = 0; y < 5; y++)
-      add({ x: 7, y }, () => prop(6, { x: 7, y }, 43, 15, 58));
+      add({ x: 7, y }, () => furniture(ctx, project, { x: 7, y }, "counter"));
     for (let seat = 4; seat < game.seats.length; seat++) {
       const p = foodSpot(seat);
-      add(p, () => prop(6, p, 43, 15, 58));
+      add(p, () => furniture(ctx, project, p, "counter"));
     }
     add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 34));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.
@@ -471,7 +498,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       if (i >= game.seats.length) return;
       const s = game.seats[i],
         chair = { x: p.x - 1, y: p.y };
-      add(chair, () => prop(1, chair, 35, 7, 30));
+      add(chair, () => furniture(ctx, project, chair, "chair"));
       if (s && !["arriving", "dirty"].includes(s.stage))
         add(
           chair,
@@ -492,7 +519,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           0.05,
         );
       add(p, () => {
-        prop(0, p, 43, 15, 60);
+        furniture(ctx, project, p, "table");
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
         if (s?.stage === "eating" || s?.stage === "dirty") {
@@ -510,14 +537,25 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             s.stage === "dirty" ? 11 : 10,
             p,
             s.stage === "dirty" ? 14 : 12,
-            -21,
+            -28,
           );
           ctx.restore();
         }
       });
       if (s?.stage === "arriving") {
         const p = along(guestRoute(i), 1 - s.left / s.duration);
-        add(p, () => person(p, s.id, "guest", true));
+        add(p, () =>
+          person(
+            p,
+            s.id,
+            "guest",
+            true,
+            undefined,
+            false,
+            undefined,
+            pathLength(guestRoute(i)) * (1 - s.left / s.duration),
+          ),
+        );
       }
     });
     game.departures.forEach((d) => {
@@ -525,7 +563,18 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         [...guestRoute(d.seat)].reverse(),
         1 - d.left / d.duration,
       );
-      add(p, () => person(p, d.id, "guest", true));
+      add(p, () =>
+        person(
+          p,
+          d.id,
+          "guest",
+          true,
+          undefined,
+          false,
+          undefined,
+          pathLength(guestRoute(d.seat)) * (1 - d.left / d.duration),
+        ),
+      );
     });
     Object.entries(game.actors).forEach(([id, a], i) => {
       const cooking =
@@ -553,6 +602,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
               : undefined,
           false,
           target,
+          pathLength(a.path) * (1 - a.left / a.duration),
         );
         if (
           art &&
@@ -577,7 +627,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           } else if (working) {
             const destination = project(tables[a.job.seat]);
             x += (destination.x - x) * progress;
-            y += (destination.y - 21 - y) * progress;
+            y += (destination.y - 28 - y) * progress;
           }
           drawSprite(ctx, art.props[10], x, y, 12);
         }

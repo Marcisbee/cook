@@ -29,7 +29,7 @@ test("guests choose, order, receive a clicked dish, and leave a table to clean",
   const canvas = page.locator("canvas"),
     box = (await canvas.boundingBox())!;
   await canvas.click({
-    position: { x: (616 / 800) * box.width, y: (198.8 / 520) * box.height },
+    position: { x: (616 / 800) * box.width, y: (189.2 / 520) * box.height },
   });
   await expect(serve).not.toBeVisible();
   await page.clock.runFor(15000);

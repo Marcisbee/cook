@@ -38,3 +38,9 @@ Use case: identity-preserve. Create a new transparent PNG sprite atlas using the
 Edit this sprite atlas only to add generous transparent gutters between every sprite. Keep all 32 poses, exact identity, colors and style unchanged. Four columns eight rows. Each sprite must be wholly separated from every neighboring sprite by at least 24 transparent pixels. In particular row 7 column 3 and row 8 column 3 currently touch and must be separated. Preserve full anatomy including feet, spoons and hair. Transparent background. No new drawing or text. Fit all complete sprites with margin around the image.
 
 Action frames use explicit silhouette bounds, shared row scales and body anchors. The generated diner rear views face northeast (despite the requested northwest); the renderer mirrors them accordingly. The waiter rear view faces northwest. Eating frames share the chair's ground anchor. Cooking, collection, placement and cleanup follow actual simulation phases, including pause and speed. Reduced motion holds action poses and suppresses decorative sway while retaining essential travel.
+
+## Projected furniture and walking rig
+
+Tables, dining chairs and service counters are drawn by `src/furniture.ts` using the same 2:1 world projection as navigation. Chair backs occupy the negative-X side, leaving the positive-X side facing the table. Counter tops and cabinet faces share the floor axes, including the second pickup counter.
+
+Walking uses `src/walk.ts`: a registered torso pose over two articulated legs. Alternating contact and swing phases are driven by route distance; stance feet move backward relative to the pelvis at travel speed, while swing feet lift and advance. Source walk frames are retained for stationary poses; repeated same-leg atlas frames no longer drive locomotion. Action atlases still drive service and eating.

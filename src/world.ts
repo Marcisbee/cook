@@ -14,7 +14,7 @@ export const chefSpot = { x: 9, y: 1.2 };
 export const secondChefSpot = { x: 10.5, y: 1.2 };
 export const pass = { x: 8, y: 5 };
 const blocked = (x: number, y: number) =>
-  tables.some((t) => t.x === x && t.y === y) ||
+  tables.some((t) => (t.x === x || t.x - 1 === x) && t.y === y) ||
   (x === 7 && y < 5) ||
   (x >= 8 && y === 0);
 
@@ -46,7 +46,7 @@ export function route(start: Point, end: Point): Point[] {
         next.x > 11 ||
         next.y < 0 ||
         next.y > 9 ||
-        blocked(next.x, next.y) ||
+        (blocked(next.x, next.y) && key(next) !== key(b)) ||
         seen.has(key(next))
       )
         continue;
@@ -88,25 +88,5 @@ export function along(path: Point[], progress: number) {
   const end = path[path.length - 1];
   return { ...end, dx: 0, dy: -1 };
 }
-const guestPaths = tables.map((t) => route(door, { x: t.x, y: t.y + 0.7 }));
-const servicePaths = Object.fromEntries(
-  ["player", "luna", "speedy"].map((id) => [
-    id,
-    tables.map((t) =>
-      route(
-        id === "player"
-          ? chefSpot
-          : id === "speedy"
-            ? { x: pass.x + 0.6, y: pass.y }
-            : pass,
-        { x: t.x + 1, y: t.y + 0.4 },
-      ),
-    ),
-  ]),
-);
+const guestPaths = tables.map((t) => route(door, { x: t.x - 1, y: t.y }));
 export const guestRoute = (seat: number) => guestPaths[seat];
-export const serviceRoute = (seat: number, worker: string) =>
-  servicePaths[worker][seat];
-export const travelTime = (seat: number, worker: string, speed: number) =>
-  pathLength(serviceRoute(seat, worker)) /
-  (worker === "player" ? 3.2 : 4 / speed);

@@ -1,124 +1,81 @@
-import { expect, test } from "@playwright/test";
-
-test("open, serve, grow, hire, pause and continue a real restaurant", async ({
+import { test, expect } from "@playwright/test";
+async function start(page: any) {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open the doors" }).click();
+}
+test("guests choose, order, receive a clicked dish, and leave a table to clean", async ({
   page,
 }) => {
-  test.setTimeout(90000);
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
   await page.clock.install();
-  await page.goto("/");
-  await page.getByLabel("Restaurant name").fill("The Little Olive");
-  await page.getByLabel("Your name").fill("Mira");
-  await page.getByRole("button", { name: "Open for business" }).click();
+  await start(page);
+  await page.clock.runFor(9000);
+  const order = page.getByRole("button", { name: "Order · 1", exact: true });
+  await expect(order).toBeVisible();
+  await page.clock.runFor(10000);
+  await expect(order).toBeEnabled();
+  await order.click();
+  await page.clock.runFor(18000);
+  const serve = page.getByRole("button", { name: /Serve · 1/ });
+  await expect(serve).toBeVisible();
+  await page.keyboard.press("Space");
+  await page.clock.runFor(1000);
+  await expect(serve).toBeEnabled();
+  // Click the physical prepared meal on the canvas rather than its accessible shortcut.
+  const canvas = page.locator("canvas"),
+    box = (await canvas.boundingBox())!;
+  await canvas.click({
+    position: { x: (420 / 640) * box.width, y: (170 / 420) * box.height },
+  });
+  await expect(serve).not.toBeVisible();
+  await page.clock.runFor(15000);
   await expect(
-    page.getByText("The Little Olive", { exact: true }).first(),
+    page.getByRole("button", { name: "Clean · 1", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Grow restaurant" }).click();
-  await page.getByRole("button", { name: "Add a seat" }).click();
-  await expect(page.getByTestId("cash")).toHaveText("€0");
-  for (let i = 0; i < 10; i++) {
-    await page.clock.runFor(8000);
-    if (await page.getByRole("button", { name: "Serve a meal" }).isEnabled())
-      await page.getByRole("button", { name: "Serve a meal" }).click();
-  }
-  await page.clock.runFor(8000);
-  await expect(page.getByTestId("served")).not.toHaveText("0");
-  await page.getByRole("tab", { name: "Team", exact: true }).click();
-  await page.getByRole("button", { name: "Hire Luna" }).click();
-  const before = Number(await page.getByTestId("served").textContent());
-  await page.clock.runFor(40000);
-  expect(
-    Number(await page.getByTestId("served").textContent()),
-  ).toBeGreaterThan(before);
-  await page.getByRole("button", { name: "Let Luna go" }).click();
-  await expect(page.getByRole("button", { name: "Hire Luna" })).toBeVisible();
-  await page.getByRole("button", { name: "Pause service" }).click();
-  const cash = await page.getByTestId("cash").textContent();
-  await page.clock.fastForward(70000);
-  await expect(page.getByTestId("cash")).toHaveText(cash!);
+  await expect(page.getByText("1 meals", { exact: false })).toBeVisible();
+  await page.clock.runFor(12000);
+  await expect(
+    page.getByRole("button", { name: "Clean · 1", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Clean · 1", exact: true }).click();
+  await page.clock.runFor(12000);
+  await expect(
+    page.getByRole("button", { name: "Clean · 1", exact: true }),
+  ).not.toBeVisible();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  const frozen = await canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+  await page.clock.runFor(2000);
+  expect(await canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL())).toBe(
+    frozen,
+  );
   await page.reload();
-  await page.getByRole("button", { name: "Continue your restaurant" }).click();
-  await expect(page.getByTestId("cash")).toHaveText(cash!);
   await expect(
-    page.getByRole("button", { name: "Resume service" }),
+    page.getByRole("button", { name: "Resume", exact: true }),
   ).toBeVisible();
-  expect(errors).toEqual([]);
 });
-
-test("mobile controls fit, keyboard starts play, and reset requires an explicit new opening", async ({
+test("compact mobile shop fits, supports keyboard and preserves purchases", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await page.getByLabel("Restaurant name").fill("A very little café");
-  await page.getByLabel("Your name").fill("Alex");
-  await page.getByLabel("Your name").press("Enter");
+  await start(page);
+  await page.getByRole("button", { name: "Shop" }).click();
+  await page.getByRole("button", { name: "€20", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Serve a meal" }),
+    page.getByText("2/8 tables · More room for guests"),
   ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
-  await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await page.getByRole("button", { name: "Start a new restaurant" }).click();
+  await page.getByRole("button", { name: "extras", exact: true }).click();
+  await expect(page.getByText("QR menus", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Opening a new restaurant replaces your saved progress."),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Keep my restaurant" }).click();
-  await expect(
-    page.getByRole("heading", { name: "A very little café" }),
-  ).toBeVisible();
-});
-
-test("the canvas animates, table clicks deliver food, and pause freezes the scene", async ({
-  page,
-}) => {
-  test.setTimeout(45000);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.clock.install();
-  await page.goto("/");
-  await page.getByRole("button", { name: "Open for business" }).click();
-  const canvas = page.locator("canvas");
-  await page.clock.runFor(2000);
-  const walking = await canvas.evaluate((el) =>
-    (el as HTMLCanvasElement).toDataURL(),
-  );
-  await page.clock.runFor(500);
-  expect(
-    await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL()),
-  ).not.toBe(walking);
-  await page.clock.runFor(14000);
-  await expect(
-    page.getByRole("button", { name: "Serve a meal" }),
-  ).toBeEnabled();
-  // Table 1's visible tabletop in the default camera, exercised through pointer hit-testing.
-  await canvas.click({ position: { x: 673, y: 277 } });
-  await expect(page.getByText("Food is on the way")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Serve a meal" }),
+    page.getByRole("button", { name: "€100", exact: true }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Pause service" }).click();
-  await page.clock.runFor(200);
-  const paused = await canvas.evaluate((el) =>
-    (el as HTMLCanvasElement).toDataURL(),
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    390,
   );
-  await page.clock.runFor(2000);
-  expect(
-    await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL()),
-  ).toBe(paused);
-  await page.getByRole("button", { name: "Zoom in" }).click();
-  await expect(page.getByRole("button", { name: "Reset camera" })).toHaveText(
-    "120%",
-  );
-  await page.clock.runFor(100);
-  expect(
-    await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL()),
-  ).not.toBe(paused);
-  await page.getByRole("button", { name: "Reset camera" }).click();
-  await expect(page.getByRole("button", { name: "Reset camera" })).toHaveText(
-    "100%",
-  );
+  await page.waitForTimeout(1100);
+  await page.reload();
+  await page.getByRole("button", { name: "Shop" }).click();
+  await expect(
+    page.getByText("2/8 tables · More room for guests"),
+  ).toBeVisible();
 });

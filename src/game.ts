@@ -1,14 +1,31 @@
-import { guestRoute, pathLength, travelTime } from "./world";
-// A single simulation clock keeps work, wages, pause and saved games in sync.
+import {
+  Point,
+  route,
+  pathLength,
+  along,
+  door,
+  chefSpot,
+  pass,
+  tables,
+  guestRoute,
+} from "./world";
 export type Stage =
-  "arriving" | "ordered" | "cooking" | "ready" | "serving" | "eating";
+  | "arriving"
+  | "choosing"
+  | "request"
+  | "ordered"
+  | "cooking"
+  | "ready"
+  | "serving"
+  | "eating"
+  | "dirty";
 export type Guest = {
   id: number;
   stage: Stage;
   left: number;
   duration: number;
-  worker?: string;
   dish: number;
+  worker?: string;
 };
 export type Staff = {
   id: string;
@@ -21,7 +38,7 @@ export type Staff = {
 export const candidates: Staff[] = [
   {
     id: "rodrigo",
-    name: "Rodrigo Sánchez",
+    name: "Rodrigo",
     role: "chef",
     speed: 5,
     price: 45,
@@ -29,23 +46,16 @@ export const candidates: Staff[] = [
   },
   {
     id: "fernando",
-    name: "Fernando Gusto",
+    name: "Fernando",
     role: "chef",
     speed: 3,
     price: 90,
     wage: 12,
   },
-  {
-    id: "luna",
-    name: "Luna Lindrome",
-    role: "waiter",
-    speed: 2,
-    price: 30,
-    wage: 5,
-  },
+  { id: "luna", name: "Luna", role: "waiter", speed: 2, price: 30, wage: 5 },
   {
     id: "speedy",
-    name: "Speedy Gonzales",
+    name: "Speedy",
     role: "waiter",
     speed: 1,
     price: 70,
@@ -53,16 +63,62 @@ export const candidates: Staff[] = [
   },
 ];
 export const dishes = [
-  { name: "Garden soup", icon: "🥣", price: 8, time: 1, unlock: 0 },
-  { name: "House pasta", icon: "🍝", price: 14, time: 1.5, unlock: 15 },
-  { name: "Chef’s special", icon: "🍲", price: 22, time: 2, unlock: 50 },
+  { name: "Garden soup", price: 8, time: 1, unlock: 0 },
+  { name: "House pasta", price: 14, time: 1.5, unlock: 15 },
+  { name: "Chef’s special", price: 22, time: 2, unlock: 50 },
 ];
-export type ReturnTrip = { seat: number; left: number; duration: number };
-export type Departure = ReturnTrip & { id: number; dish: number };
+export const upgrades = [
+  {
+    id: "qr",
+    name: "QR menus",
+    price: 100,
+    unlock: 8,
+    detail: "Guests send their own orders after choosing.",
+  },
+  {
+    id: "stove",
+    name: "Quick stove",
+    price: 150,
+    unlock: 15,
+    detail: "All cooking takes 35% less time.",
+  },
+  {
+    id: "washer",
+    name: "Dishwasher",
+    price: 180,
+    unlock: 20,
+    detail: "Table cleanup takes half the time.",
+  },
+  {
+    id: "bell",
+    name: "Dispatch bell",
+    price: 300,
+    unlock: 35,
+    detail: "Automatically queues each finished dish.",
+  },
+];
+export type Job = {
+  kind: "order" | "serve" | "clean";
+  seat: number;
+  guest: number;
+};
+export type Actor = {
+  pos: Point;
+  path: Point[];
+  left: number;
+  duration: number;
+  phase: "idle" | "walk" | "work" | "pickup" | "home";
+  job?: Job;
+};
+export type Departure = {
+  seat: number;
+  id: number;
+  dish: number;
+  left: number;
+  duration: number;
+};
 export type Game = {
-  returning: Record<string, ReturnTrip>;
-  departures: Departure[];
-  version: 1;
+  version: 2;
   name: string;
   owner: string;
   cash: number;
@@ -70,6 +126,10 @@ export type Game = {
   served: number;
   seats: (Guest | null)[];
   staff: string[];
+  upgrades: string[];
+  actors: Record<string, Actor>;
+  queue: Job[];
+  departures: Departure[];
   popularity: number;
   dish: number;
   time: number;
@@ -84,24 +144,33 @@ export type Game = {
 export type Action =
   | { type: "tick"; seconds: number }
   | { type: "seat" | "publicity" | "pause" | "speed" }
-  | { type: "serve"; seat?: number }
-  | { type: "hire" | "fire"; id: string }
+  | { type: "order" | "serve" | "clean"; seat: number }
+  | { type: "hire" | "fire" | "upgrade"; id: string }
   | { type: "dish"; dish: number };
+const actor = (pos: Point): Actor => ({
+  pos: { ...pos },
+  path: [pos],
+  left: 0,
+  duration: 0,
+  phase: "idle",
+});
 export const seatPrice = (g: Game) => 20 * g.seats.length;
 export const publicityPrice = (g: Game) => 35 * g.popularity;
-export const arrivalSeconds = (g: Game) => 10 / (1 + (g.popularity - 1) * 0.35);
+export const arrivalSeconds = (g: Game) => 12 / (1 + (g.popularity - 1) * 0.35);
 export function newGame(name: string, owner: string): Game {
   return {
-    version: 1,
-    returning: {},
-    departures: [],
-    name: name.trim().slice(0, 40) || "Black Oasis",
-    owner: owner.trim().slice(0, 30) || "John Cook",
+    version: 2,
+    name: name.trim().slice(0, 40) || "Little Ladle",
+    owner: owner.trim().slice(0, 30) || "Cook",
     cash: 20,
     earned: 0,
     served: 0,
     seats: [null],
     staff: [],
+    upgrades: [],
+    actors: { owner: actor(chefSpot) },
+    queue: [],
+    departures: [],
     popularity: 1,
     dish: 0,
     time: 0,
@@ -111,50 +180,60 @@ export function newGame(name: string, owner: string): Game {
     missed: 0,
     paused: false,
     speed: 1,
-    log: ["Doors open! Your first guest is on the way."],
+    log: ["Welcome! Guests choose, then you take their order."],
   };
 }
-function note(g: Game, message: string) {
-  g.log = [message, ...g.log].slice(0, 6);
-}
-function transition(
-  guest: Guest,
-  stage: Stage,
-  duration: number,
-  worker?: string,
-) {
-  Object.assign(guest, { stage, left: duration, duration, worker });
-}
-function spend(g: Game, amount: number) {
-  if (g.cash < amount) return false;
-  g.cash -= amount;
+const note = (g: Game, s: string) => {
+  g.log = [s, ...g.log].slice(0, 6);
+};
+const transition = (s: Guest, stage: Stage, duration = 0, worker?: string) =>
+  Object.assign(s, { stage, left: duration, duration, worker });
+const spend = (g: Game, n: number) => {
+  if (g.cash < n) return false;
+  g.cash -= n;
   return true;
+};
+export const isQueued = (g: Game, seat: number) =>
+  g.queue.some((j) => j.seat === seat) ||
+  Object.values(g.actors).some((a) => a.job?.seat === seat);
+function enqueue(g: Game, kind: Job["kind"], seat: number) {
+  const s = g.seats[seat];
+  if (
+    !s ||
+    isQueued(g, seat) ||
+    s.stage !== { order: "request", serve: "ready", clean: "dirty" }[kind]
+  )
+    return;
+  g.queue.push({ kind, seat, guest: s.id });
+}
+function travel(a: Actor, to: Point, phase: Actor["phase"], speed: number) {
+  a.path = route(a.pos, to);
+  a.duration = a.left = Math.max(0.05, pathLength(a.path) / speed);
+  a.phase = phase;
 }
 function release(g: Game, id: string) {
   g.staff = g.staff.filter((s) => s !== id);
-  delete g.returning[id];
-  g.seats.forEach((guest) => {
-    if (guest?.worker === id)
-      transition(guest, guest.stage === "cooking" ? "ordered" : "ready", 0);
+  const job = g.actors[id]?.job;
+  if (job) {
+    const s = g.seats[job.seat];
+    if (s?.id === job.guest && s.stage === "serving") transition(s, "ready");
+    g.queue.unshift(job);
+  }
+  delete g.actors[id];
+  g.seats.forEach((s) => {
+    if (s?.worker === id) transition(s, "ordered");
   });
 }
 export function update(game: Game, action: Action): Game {
-  if (action.type === "serve" && game.paused) return game;
   if (
-    action.type === "tick" &&
-    (game.paused || !Number.isFinite(action.seconds) || action.seconds <= 0)
+    (action.type === "tick" &&
+      (game.paused ||
+        !Number.isFinite(action.seconds) ||
+        action.seconds <= 0)) ||
+    (["order", "serve", "clean"].includes(action.type) && game.paused)
   )
     return game;
-  const g: Game = {
-    ...game,
-    returning: Object.fromEntries(
-      Object.entries(game.returning).map(([id, trip]) => [id, { ...trip }]),
-    ),
-    departures: game.departures.map((d) => ({ ...d })),
-    seats: game.seats.map((s) => (s ? { ...s } : null)),
-    staff: [...game.staff],
-    log: [...game.log],
-  };
+  const g = structuredClone(game);
   switch (action.type) {
     case "pause":
       g.paused = !g.paused;
@@ -165,38 +244,48 @@ export function update(game: Game, action: Action): Game {
     case "seat":
       if (g.seats.length < 8 && spend(g, seatPrice(g))) {
         g.seats.push(null);
-        note(g, "A new seat is ready for guests.");
+        note(g, "Another table, another story.");
       }
       return g;
     case "publicity":
       if (g.popularity < 5 && spend(g, publicityPrice(g))) {
         g.popularity++;
-        g.arrival = Math.min(g.arrival, arrivalSeconds(g));
-        note(g, "Word is spreading. More guests will visit!");
+        note(g, "Word is spreading!");
       }
       return g;
     case "hire": {
-      const person = candidates.find((s) => s.id === action.id);
+      const p = candidates.find((p) => p.id === action.id);
       if (
-        person &&
-        !g.staff.includes(person.id) &&
-        g.staff.filter(
-          (id) => candidates.find((s) => s.id === id)?.role === person.role,
-        ).length < (person.role === "chef" ? 1 : 2) &&
-        spend(g, person.price)
+        p &&
+        !g.staff.includes(p.id) &&
+        !(
+          p.role === "chef" &&
+          g.staff.some(
+            (id) => candidates.find((p) => p.id === id)?.role === "chef",
+          )
+        ) &&
+        spend(g, p.price)
       ) {
-        g.staff.push(person.id);
-        note(g, `${person.name} joined the team.`);
+        g.staff.push(p.id);
+        if (p.role === "waiter")
+          g.actors[p.id] = actor({ x: 8, y: p.id === "luna" ? 6 : 7 });
+        note(g, p.name + " joined the team.");
       }
       return g;
     }
-    case "fire": {
-      if (g.staff.includes(action.id)) {
-        release(g, action.id);
-        note(
-          g,
-          `${candidates.find((s) => s.id === action.id)!.name} left the team.`,
-        );
+    case "fire":
+      release(g, action.id);
+      return g;
+    case "upgrade": {
+      const u = upgrades.find((u) => u.id === action.id);
+      if (
+        u &&
+        !g.upgrades.includes(u.id) &&
+        g.served >= u.unlock &&
+        spend(g, u.price)
+      ) {
+        g.upgrades.push(u.id);
+        note(g, u.name + " installed!");
       }
       return g;
     }
@@ -204,255 +293,367 @@ export function update(game: Game, action: Action): Game {
       if (dishes[action.dish] && g.served >= dishes[action.dish].unlock)
         g.dish = action.dish;
       return g;
-    case "serve": {
-      // Manual serving always remains available, even with no money or staff.
-      if (g.returning.player || g.seats.some((s) => s?.worker === "player"))
-        return g;
-      const seat =
-        action.seat ?? g.seats.findIndex((s) => s?.stage === "ready");
-      const guest = g.seats[seat];
-      if (guest?.stage === "ready")
-        transition(guest, "serving", travelTime(seat, "player", 1), "player");
+    case "order":
+    case "serve":
+    case "clean":
+      enqueue(g, action.type, action.seat);
       return g;
-    }
-    case "tick":
-      break;
   }
-  // Bound each step to preserve stage ordering after a suspended browser frame.
   const dt = Math.min(action.seconds, 0.25) * g.speed;
   g.time += dt;
-  for (const [id, trip] of Object.entries(g.returning)) {
-    trip.left -= dt;
-    if (trip.left <= 0) delete g.returning[id];
-  }
-  g.departures = g.departures
-    .map((d) => ({ ...d, left: d.left - dt }))
-    .filter((d) => d.left > 0);
-  const ownerAway =
-    !!g.returning.player || g.seats.some((s) => s?.worker === "player");
   g.arrival -= dt;
   g.payroll -= dt;
   if (g.payroll <= 0) {
     g.payroll += 60;
     for (const id of [...g.staff]) {
-      const person = candidates.find((s) => s.id === id)!;
-      if (!spend(g, person.wage)) {
+      const p = candidates.find((p) => p.id === id)!;
+      if (!spend(g, p.wage)) {
         release(g, id);
-        note(
-          g,
-          `${person.name} left: unable to pay wages. You can still serve by hand.`,
-        );
-      } else note(g, `Paid ${person.name} €${person.wage}.`);
+        note(g, p.name + " left: wages could not be paid.");
+      }
     }
   }
-  g.seats.forEach((guest, index) => {
-    if (!guest || ["ordered", "ready"].includes(guest.stage)) return;
-    if (guest.stage === "cooking" && guest.worker === "owner" && ownerAway)
-      return;
-    guest.left -= dt;
-    if (guest.left > 0) return;
-    switch (guest.stage) {
-      case "arriving":
-        transition(guest, "ordered", 0);
-        break;
-      case "cooking":
-        transition(guest, "ready", 0);
-        break;
-      case "serving":
-        if (guest.worker)
-          g.returning[guest.worker] = {
-            seat: index,
-            left: guest.duration,
-            duration: guest.duration,
-          };
-        transition(guest, "eating", 5);
-        break;
-      case "eating": {
-        const price = dishes[guest.dish].price;
+  g.departures = g.departures
+    .map((d) => ({ ...d, left: d.left - dt }))
+    .filter((d) => d.left > 0);
+  // A worker carries one job from pickup through delivery, then returns home.
+  for (const [id, a] of Object.entries(g.actors)) {
+    if (a.phase === "idle") continue;
+    const speed =
+      id === "owner"
+        ? 3.5
+        : 5 / (candidates.find((p) => p.id === id)?.speed || 1);
+    a.left = Math.max(0, a.left - dt);
+    if (a.phase !== "work") a.pos = along(a.path, 1 - a.left / a.duration);
+    if (a.left > 0) continue;
+    if (a.phase === "home") {
+      a.phase = "idle";
+      continue;
+    }
+    const j = a.job!,
+      s = g.seats[j.seat];
+    if (!s || s.id !== j.guest) {
+      delete a.job;
+      travel(a, id === "owner" ? chefSpot : pass, "home", speed);
+      continue;
+    }
+    if (a.phase === "pickup") {
+      transition(s, "serving");
+      travel(
+        a,
+        { x: tables[j.seat].x + 1, y: tables[j.seat].y },
+        "walk",
+        speed,
+      );
+      continue;
+    }
+    if (a.phase === "walk") {
+      a.phase = "work";
+      a.duration = a.left =
+        j.kind === "clean" ? (g.upgrades.includes("washer") ? 1.2 : 2.4) : 0.8;
+      continue;
+    }
+    if (j.kind === "order") transition(s, "ordered");
+    if (j.kind === "serve") transition(s, "eating", 5);
+    if (j.kind === "clean") g.seats[j.seat] = null;
+    delete a.job;
+    travel(a, id === "owner" ? chefSpot : pass, "home", speed);
+  }
+  g.seats.forEach((s, i) => {
+    if (!s) return;
+    if (["arriving", "choosing", "cooking", "eating"].includes(s.stage)) {
+      s.left = Math.max(0, s.left - dt);
+      if (s.left > 0) return;
+      if (s.stage === "arriving") transition(s, "choosing", 3);
+      else if (s.stage === "choosing")
+        transition(s, g.upgrades.includes("qr") ? "ordered" : "request");
+      else if (s.stage === "cooking") transition(s, "ready");
+      else if (s.stage === "eating") {
+        const price = dishes[s.dish].price;
         g.cash += price;
         g.earned += price;
         g.served++;
-        const duration = pathLength(guestRoute(index)) / 2.2;
+        const duration = pathLength(guestRoute(i)) / 2.5;
         g.departures.push({
-          seat: index,
-          id: guest.id,
-          dish: guest.dish,
+          seat: i,
+          id: s.id,
+          dish: s.dish,
           left: duration,
           duration,
         });
-        g.seats[index] = null;
-        note(
-          g,
-          `Guest ${guest.id} enjoyed ${dishes[guest.dish].name.toLowerCase()}. +€${price}`,
-        );
-        if (g.served === 15 || g.served === 50)
-          note(g, "A new dish is unlocked in your menu!");
+        transition(s, "dirty");
+        note(g, "Happy guest! +€" + price);
+      }
+    }
+    if (s.stage === "request" && g.upgrades.includes("qr"))
+      transition(s, "ordered");
+    if (
+      g.staff.some(
+        (id) => candidates.find((p) => p.id === id)?.role === "waiter",
+      ) &&
+      (s.stage === "request" || s.stage === "dirty")
+    )
+      enqueue(g, s.stage === "request" ? "order" : "clean", i);
+    if (s.stage === "ready" && g.upgrades.includes("bell"))
+      enqueue(g, "serve", i);
+  });
+  // FIFO dispatch: clicks remain queued while every available worker is busy.
+  for (const [id, a] of Object.entries(g.actors)) {
+    if (a.phase !== "idle" || g.seats.some((s) => s?.worker === id)) continue;
+    let j: Job | undefined;
+    while (g.queue.length) {
+      const next = g.queue.shift()!;
+      const s = g.seats[next.seat];
+      if (
+        s?.id === next.guest &&
+        s.stage ===
+          { order: "request", serve: "ready", clean: "dirty" }[next.kind]
+      ) {
+        j = next;
         break;
       }
     }
-  });
-  if (g.arrival <= 0) {
-    g.arrival += arrivalSeconds(g);
-    const seat = g.seats.indexOf(null);
-    if (seat !== -1)
-      g.seats[seat] = {
-        id: g.nextId++,
-        stage: "arriving",
-        left: pathLength(guestRoute(seat)) / 2.2,
-        duration: pathLength(guestRoute(seat)) / 2.2,
-        dish: g.dish,
-      };
-    else {
-      g.missed++;
-      note(g, "A guest found no free seat. Try expanding your dining room.");
-    }
+    if (!j) continue;
+    a.job = j;
+    travel(
+      a,
+      j.kind === "serve"
+        ? pass
+        : { x: tables[j.seat].x + 1, y: tables[j.seat].y },
+      j.kind === "serve" ? "pickup" : "walk",
+      id === "owner"
+        ? 3.5
+        : 5 / (candidates.find((p) => p.id === id)?.speed || 1),
+    );
   }
-  const workers = [
-    ...g.staff.map((id) => candidates.find((s) => s.id === id)!),
-    { id: "owner", role: "chef", speed: 6 },
+  const cooks = [
+    ...g.staff
+      .map((id) => candidates.find((p) => p.id === id)!)
+      .filter((p) => p.role === "chef"),
+    { id: "owner", speed: 6 },
   ];
-  for (const worker of workers) {
+  for (const p of cooks) {
     if (
-      g.returning[worker.id] ||
-      (worker.id === "owner" && ownerAway) ||
-      g.seats.some((s) => s?.worker === worker.id)
+      g.seats.some((s) => s?.worker === p.id) ||
+      (p.id === "owner" && g.actors.owner.phase !== "idle")
     )
       continue;
-    const guest = g.seats.find(
-      (s) => s?.stage === (worker.role === "chef" ? "ordered" : "ready"),
-    );
-    if (guest)
+    const s = g.seats.find((s) => s?.stage === "ordered");
+    if (s)
       transition(
-        guest,
-        worker.role === "chef" ? "cooking" : "serving",
-        worker.role === "chef"
-          ? worker.speed * dishes[guest.dish].time
-          : travelTime(g.seats.indexOf(guest), worker.id, worker.speed),
-        worker.id,
+        s,
+        "cooking",
+        p.speed *
+          dishes[s.dish].time *
+          (g.upgrades.includes("stove") ? 0.65 : 1),
+        p.id,
       );
+  }
+  if (g.arrival <= 0) {
+    g.arrival += arrivalSeconds(g);
+    const i = g.seats.indexOf(null);
+    if (i < 0) g.missed++;
+    else {
+      const duration = pathLength(guestRoute(i)) / 2.5;
+      g.seats[i] = {
+        id: g.nextId++,
+        stage: "arriving",
+        left: duration,
+        duration,
+        dish: g.dish,
+      };
+    }
   }
   return g;
 }
 export const SAVE_KEY = "cook-save-v1";
-// Saves are untrusted browser data. Reject incompatible or invalid progress safely.
 export function readSave(raw: string | null): Game | null {
   if (!raw) return null;
   try {
-    const g = JSON.parse(raw) as Game;
-    const finite = (n: unknown, min: number, max: number) =>
-      typeof n === "number" && Number.isFinite(n) && n >= min && n <= max;
+    const s = JSON.parse(raw);
+    const finite = (v: unknown, min = 0, max = 1e12) =>
+      typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
     if (
-      g.version !== 1 ||
-      typeof g.name !== "string" ||
-      !g.name.trim() ||
-      g.name.length > 40 ||
-      typeof g.owner !== "string" ||
-      !g.owner.trim() ||
-      g.owner.length > 30 ||
-      !finite(g.cash, 0, 1e12) ||
-      !finite(g.earned, 0, 1e12) ||
-      !Number.isInteger(g.served) ||
-      !finite(g.served, 0, 1e10) ||
-      !Number.isInteger(g.popularity) ||
-      !finite(g.popularity, 1, 5) ||
-      !Number.isInteger(g.dish) ||
-      !dishes[g.dish] ||
-      g.served < dishes[g.dish].unlock ||
-      !finite(g.time, 0, 1e12) ||
-      !finite(g.arrival, 0, 10) ||
-      !finite(g.payroll, 0, 60) ||
-      !Number.isInteger(g.nextId) ||
-      !finite(g.nextId, 1, 1e12) ||
-      !Number.isInteger(g.missed) ||
-      !finite(g.missed, 0, 1e12) ||
-      !Array.isArray(g.staff) ||
-      new Set(g.staff).size !== g.staff.length ||
-      g.staff.some((id) => !candidates.some((s) => s.id === id)) ||
-      g.staff.filter(
-        (id) => candidates.find((s) => s.id === id)?.role === "chef",
-      ).length > 1 ||
-      !Array.isArray(g.seats) ||
-      g.seats.length < 1 ||
-      g.seats.length > 8 ||
-      !Array.isArray(g.log) ||
-      g.log.length > 6 ||
-      g.log.some((s) => typeof s !== "string" || s.length > 200) ||
-      typeof g.paused !== "boolean" ||
-      ![1, 2].includes(g.speed)
+      ![1, 2].includes(s.version) ||
+      typeof s.name !== "string" ||
+      !s.name.trim() ||
+      s.name.length > 40 ||
+      typeof s.owner !== "string" ||
+      s.owner.length > 30 ||
+      !finite(s.cash) ||
+      !finite(s.earned) ||
+      !Number.isInteger(s.served) ||
+      !finite(s.served) ||
+      !Number.isInteger(s.popularity) ||
+      !finite(s.popularity, 1, 5) ||
+      !Number.isInteger(s.dish) ||
+      !dishes[s.dish] ||
+      s.served < dishes[s.dish].unlock ||
+      !Array.isArray(s.seats) ||
+      s.seats.length < 1 ||
+      s.seats.length > 8 ||
+      !Array.isArray(s.staff) ||
+      s.staff.some((id: string) => !candidates.some((p) => p.id === id)) ||
+      new Set(s.staff).size !== s.staff.length ||
+      s.staff.filter(
+        (id: string) => candidates.find((p) => p.id === id)?.role === "chef",
+      ).length > 1
     )
       return null;
-    // Earlier draft saves did not contain travel. Keep their economy and orders.
-    g.returning ??= {};
-    g.departures ??= [];
-    const tripValid = (t: ReturnTrip) =>
-      !!t &&
-      Number.isInteger(t.seat) &&
-      finite(t.seat, 0, g.seats.length - 1) &&
-      finite(t.left, 0, 30) &&
-      finite(t.duration, 0.01, 30) &&
-      t.left <= t.duration;
+    if (s.version === 1) {
+      const g = newGame(s.name, s.owner);
+      for (const key of [
+        "cash",
+        "earned",
+        "served",
+        "popularity",
+        "dish",
+      ] as const)
+        g[key] = s[key];
+      g.seats = s.seats.map(() => null);
+      g.staff = s.staff;
+      for (const id of g.staff)
+        if (candidates.find((p) => p.id === id)?.role === "waiter")
+          g.actors[id] = actor(pass);
+      note(g, "New service loop! Your money, tables and team are kept.");
+      return g;
+    }
     if (
-      typeof g.returning !== "object" ||
-      Array.isArray(g.returning) ||
-      Object.entries(g.returning).some(
-        ([id, t]) => !["player", ...g.staff].includes(id) || !tripValid(t),
-      ) ||
-      !Array.isArray(g.departures) ||
-      g.departures.length > 16 ||
-      g.departures.some(
-        (d) =>
-          !tripValid(d) ||
-          !Number.isInteger(d.id) ||
-          !finite(d.id, 1, g.nextId - 1) ||
-          !dishes[d.dish],
-      )
+      !finite(s.time) ||
+      !finite(s.arrival, 0, 20) ||
+      !finite(s.payroll, 0, 60) ||
+      !Number.isInteger(s.nextId) ||
+      !finite(s.nextId, 1) ||
+      !finite(s.missed) ||
+      typeof s.paused !== "boolean" ||
+      ![1, 2].includes(s.speed) ||
+      !Array.isArray(s.upgrades) ||
+      new Set(s.upgrades).size !== s.upgrades.length ||
+      s.upgrades.some((id: string) => !upgrades.some((u) => u.id === id)) ||
+      !Array.isArray(s.log) ||
+      s.log.length > 6 ||
+      s.log.some((v: unknown) => typeof v !== "string" || v.length > 200)
     )
       return null;
-    const ids = new Set<number>();
-    const workers = new Set<string>();
-    for (const s of g.seats) {
-      if (s === null) continue;
+    const stages = [
+      "arriving",
+      "choosing",
+      "request",
+      "ordered",
+      "cooking",
+      "ready",
+      "serving",
+      "eating",
+      "dirty",
+    ];
+    const ids = new Set();
+    for (const g of s.seats) {
+      if (g === null) continue;
       if (
-        !s ||
-        !Number.isInteger(s.id) ||
-        !finite(s.id, 1, g.nextId - 1) ||
-        ids.has(s.id) ||
-        ![
-          "arriving",
-          "ordered",
-          "cooking",
-          "ready",
-          "serving",
-          "eating",
-        ].includes(s.stage) ||
-        !finite(s.left, 0, 20) ||
-        !finite(s.duration, 0, 20) ||
-        s.left > s.duration ||
-        !Number.isInteger(s.dish) ||
-        !dishes[s.dish]
+        !g ||
+        !Number.isInteger(g.id) ||
+        !finite(g.id, 1, s.nextId - 1) ||
+        ids.has(g.id) ||
+        !stages.includes(g.stage) ||
+        !finite(g.left, 0, 60) ||
+        !finite(g.duration, 0, 60) ||
+        g.left > g.duration ||
+        !dishes[g.dish] ||
+        (g.worker &&
+          !(
+            g.stage === "cooking" &&
+            [
+              "owner",
+              ...s.staff.filter(
+                (id: string) =>
+                  candidates.find((p) => p.id === id)?.role === "chef",
+              ),
+            ].includes(g.worker)
+          ))
       )
         return null;
-      ids.add(s.id);
-      if (s.worker) {
+      ids.add(g.id);
+    }
+    const validJob = (j: Job) =>
+      j &&
+      ["order", "serve", "clean"].includes(j.kind) &&
+      Number.isInteger(j.seat) &&
+      j.seat >= 0 &&
+      j.seat < s.seats.length &&
+      s.seats[j.seat]?.id === j.guest;
+    const point = (p: Point) => p && finite(p.x, 0, 12) && finite(p.y, 0, 11);
+    if (
+      !s.actors ||
+      !s.actors.owner ||
+      !Array.isArray(s.queue) ||
+      s.queue.length > 8 ||
+      !s.queue.every(validJob) ||
+      !Array.isArray(s.departures) ||
+      s.departures.length > 16
+    )
+      return null;
+    const expectedActors = [
+      "owner",
+      ...s.staff.filter(
+        (id: string) => candidates.find((p) => p.id === id)?.role === "waiter",
+      ),
+    ];
+    if (expectedActors.some((id) => !s.actors[id])) return null;
+    const cooks = s.seats
+      .filter((g: Guest | null) => g?.worker)
+      .map((g: Guest) => g.worker);
+    if (new Set(cooks).size !== cooks.length) return null;
+    const jobs = new Set<number>();
+    for (const j of s.queue) {
+      if (jobs.has(j.seat)) return null;
+      jobs.add(j.seat);
+    }
+    for (const [id, a] of Object.entries(s.actors) as [string, Actor][]) {
+      if (
+        ![
+          "owner",
+          ...s.staff.filter(
+            (id: string) =>
+              candidates.find((p) => p.id === id)?.role === "waiter",
+          ),
+        ].includes(id) ||
+        !point(a.pos) ||
+        !Array.isArray(a.path) ||
+        !a.path.length ||
+        a.path.length > 100 ||
+        !a.path.every(point) ||
+        !finite(a.left, 0, 60) ||
+        !finite(a.duration, 0, 60) ||
+        a.left > a.duration ||
+        !["idle", "walk", "work", "pickup", "home"].includes(a.phase)
+      )
+        return null;
+      if (a.job) {
         if (
-          !["cooking", "serving"].includes(s.stage) ||
-          !["owner", "player", ...g.staff].includes(s.worker) ||
-          workers.has(s.worker) ||
-          (s.stage === "cooking" &&
-            s.worker !== "owner" &&
-            !candidates.some((p) => p.id === s.worker && p.role === "chef")) ||
-          (s.stage === "serving" &&
-            s.worker !== "player" &&
-            !candidates.some(
-              (p) => p.id === s.worker && p.role === "waiter",
-            )) ||
-          (s.stage === "serving" && !!g.returning[s.worker])
+          !validJob(a.job) ||
+          jobs.has(a.job.seat) ||
+          !{
+            order: ["request"],
+            serve: ["ready", "serving"],
+            clean: ["dirty"],
+          }[a.job.kind].includes(s.seats[a.job.seat].stage)
         )
           return null;
-        workers.add(s.worker);
-      }
+        jobs.add(a.job.seat);
+      } else if (!["idle", "home"].includes(a.phase)) return null;
     }
-    return g;
+    for (const d of s.departures)
+      if (
+        !Number.isInteger(d.seat) ||
+        !finite(d.seat, 0, s.seats.length - 1) ||
+        !finite(d.left, 0, 30) ||
+        !finite(d.duration, 0.01, 30) ||
+        d.left > d.duration ||
+        !dishes[d.dish] ||
+        !finite(d.id, 1, s.nextId - 1)
+      )
+        return null;
+    return s;
   } catch {
     return null;
   }

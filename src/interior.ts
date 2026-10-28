@@ -112,30 +112,45 @@ export function interior(
       panel(side, t, 0.025, z, 0.65, i % 2 ? "#d3bf9e" : "#e2ceb0");
     }
   }
-  // Tall leaded windows inset into the left wall.
-  for (const t of [1.35, 4.35, 7.35]) {
-    if (art) {
-      const q = wall(0, t + 0.75, 25);
-      drawSprite(ctx, art.decor[1], q.x, q.y, 64);
+  // Windows are built on the wall plane, with identical scale and depth.
+  // A front-facing image pasted onto a sloping wall cannot align its frame.
+  for (const t of [0.7, 3.7, 6.7]) {
+    panel(0, t, 1.85, 31, 49, "#755b3d");
+    panel(0, t + 0.08, 1.69, 32, 47, "#bfa77d");
+    panel(0, t + 0.17, 1.51, 34, 43, "#567b79");
+    for (let col = 0; col < 4; col++) {
+      for (let row = 0; row < 6; row++) {
+        panel(
+          0,
+          t + 0.22 + col * 0.36,
+          0.31,
+          35 + row * 6.8,
+          6.1,
+          ["#8caba0", "#a7bab0", "#738f8d", "#bac4ad"][(row + col * 3) % 4],
+        );
+      }
     }
+    panel(0, t + 0.87, 0.09, 33, 45, "#d8c6a3");
+    panel(0, t - 0.08, 2.01, 30, 2.2, "#e0cba0");
+    panel(0, t - 0.06, 1.97, 80, 2, "#e0cba0");
   }
   if (art) {
     const cabinet = project({ x: 5.1, y: -0.4 });
-    drawSprite(ctx, art.decor[0], cabinet.x, cabinet.y, 78);
+    drawSprite(ctx, art.decor[0], cabinet.x, cabinet.y, 84);
     const menu = wall(1, 3.3, 32);
     drawSprite(ctx, art.decor[6], menu.x, menu.y, 37);
     for (const y of [0.1, 9.4]) {
       const q = project({ x: -0.65, y });
-      drawSprite(ctx, art.decor[5], q.x, q.y, 77);
+      drawSprite(ctx, art.decor[5], q.x, q.y, 85);
     }
     for (const x of [3.4, 10.5]) {
       const q = project({ x, y: 11.5 });
-      drawSprite(ctx, art.decor[4], q.x, q.y, 43);
+      drawSprite(ctx, art.decor[4], q.x, q.y, 30);
     }
     const bench = project({ x: 7, y: 12.2 });
-    drawSprite(ctx, art.decor[3], bench.x, bench.y, 42);
+    drawSprite(ctx, art.decor[3], bench.x, bench.y, 48);
     const lamp = project({ x: -0.8, y: 10.6 });
-    drawSprite(ctx, art.decor[2], lamp.x, lamp.y, 62);
+    drawSprite(ctx, art.decor[2], lamp.x, lamp.y, 65);
   }
   // Shelves, crockery, framed menu and brass lamps on the kitchen wall.
   for (const t of [6.9, 9.1]) {
@@ -171,10 +186,4 @@ export function interior(
     ctx.fillStyle = light;
     ctx.fillRect(p.x - 22, p.y - 27, 44, 44);
   }
-  // The garden border is deliberately behind the front edge of the play area.
-  if (art)
-    for (let i = 0; i < 9; i++) {
-      const p = project({ x: 12.35, y: i + 0.1 });
-      drawSprite(ctx, art.props[7], p.x, p.y, 24 + (i % 3) * 3);
-    }
 }

@@ -193,18 +193,9 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
       ctx.scale(camera.zoom, camera.zoom);
       ctx.translate(-W / 2, -H / 2);
-      // Deterministic garden texture: no random flicker between animation frames.
-      for (let i = 0; i < 1300; i++) {
-        const x = ((i * 173 + 19) % 1000) - 100,
-          y = ((i * 97 + 31) % 720) - 100;
-        rect(x, y, 1, 1, i % 3 ? "#6c805a" : "#81966b");
-        if (i % 7 === 0) {
-          rect(x + 3, y - 2, 2, 4, "#536d50");
-          rect(x - 1, y - 4, 2, 4, "#83946a");
-        }
-      }
-      for (let y = 10; y < 18; y++) {
-        diamond({ x: 1, y }, 1.5, 0.98, y % 2 ? "#d9c6a0" : "#e6d6b0");
+      if (art) {
+        // Continuous garden shares the world camera; the room sits inside it.
+        ctx.drawImage(art.garden[0].image, -180, -130, 1160, 773.33);
       }
       // Cobbled terrace and stone edging around the restaurant footprint.
       for (let x = -2; x < 14; x++)
@@ -234,15 +225,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         box({ x, y: 10.6 }, 0.98, 0.34, 8, "#c6b494", "#82775f", "#a09276");
         box({ x, y: 10.6 }, 1.03, 0.42, 10, "#dfcba7", "#b3a07e", "#c5b28f");
       }
-      // Behind-wall foliage must be painted before the wall itself.
-      if (art)
-        for (const p of [
-          { x: -2, y: 4 },
-          { x: -2, y: 8 },
-        ]) {
-          const q = project(p);
-          drawSprite(ctx, art.props[8], q.x, q.y + 12, 112);
-        }
       // A foundation, timber seams and planted borders make a place, not a floating grid.
       box({ x: 5.5, y: 4.5 }, 12.2, 10.2, 0, "#8f7854", "#796249", "#6e593f");
       const backA = project({ x: -0.5, y: -0.5 }),
@@ -407,7 +389,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         drawIdle(
           ctx,
           poses,
-          role === "chef" ? 70 : seated ? 48 : 60,
+          role === "chef" ? 62 : seated ? 43 : 56,
           flip,
           game.time,
           id + (role === "chef" ? 7 : role === "waiter" ? 13 : 0),
@@ -420,7 +402,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
           sprite,
           0,
           0,
-          role === "chef" ? 70 : seated ? 48 : 60,
+          role === "chef" ? 62 : seated ? 43 : 56,
           flip,
         );
       ctx.restore();
@@ -458,35 +440,41 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         ctx.restore();
       }
     };
-    // Landscape is scenery only, outside the navigable floor.
-    for (const [p, h] of [
-      [{ x: 12, y: 8 }, 90],
-      [{ x: 10, y: 12 }, 90],
-    ] as [Point, number][])
-      add(p, () => prop(8, p, h, 12));
-    for (const p of [
-      { x: 12, y: 3 },
-      { x: 12, y: 5 },
-      { x: 7, y: 11 },
-    ])
-      add(p, () => prop(7, p, 40));
-    for (let x = 8; x < 12; x++)
-      add({ x, y: 0 }, () => {
-        prop(
-          x === 11 ? 5 : 2,
-          { x, y: 0 },
-          x === 11 ? 76 : 52,
-          15,
-          x === 11 ? 58 : 48,
-        );
-      });
+    // A shared furniture atlas and explicit widths keep kitchen equipment in
+    // the same unit scale as the tables, chairs and walking characters.
+    if (art) {
+      for (let x = 8; x < 12; x++) {
+        const p = { x, y: 0 };
+        add(p, () => {
+          const q = project(p);
+          drawSprite(
+            ctx,
+            art.furnishings[x === 11 ? 3 : 2],
+            q.x,
+            q.y + 14,
+            0,
+            false,
+            x === 11 ? 34 : 45,
+          );
+        });
+      }
+      for (const p of [
+        { x: 12.7, y: 6 },
+        { x: 7, y: 11.7 },
+      ]) {
+        add(p, () => {
+          const q = project(p);
+          drawSprite(ctx, art.furnishings[5], q.x, q.y, 31);
+        });
+      }
+    }
     for (let y = 0; y < 5; y++)
       add({ x: 7, y }, () => furniture(ctx, project, { x: 7, y }, "counter"));
     for (let seat = 4; seat < game.seats.length; seat++) {
       const p = foodSpot(seat);
       add(p, () => furniture(ctx, project, p, "counter"));
     }
-    add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 34));
+    add({ x: 11, y: 2 }, () => prop(9, { x: 11, y: 2 }, 22));
     // Diners and furniture occupy distinct floor cells; draw everything by its feet.
     tables.forEach((p, i) => {
       if (i >= game.seats.length) return;
@@ -494,7 +482,8 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         chair = { x: p.x - 1, y: p.y };
       add(chair, () => {
         const q = project(chair);
-        if (art) drawSprite(ctx, art.props[1], q.x, q.y + 9, 0, true, 36);
+        if (art)
+          drawSprite(ctx, art.furnishings[1], q.x, q.y + 8, 0, false, 27);
         else furniture(ctx, project, chair, "chair");
       });
       if (s && !["arriving", "dirty"].includes(s.stage))
@@ -519,7 +508,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       add(p, () => {
         if (art) {
           const q = project(p);
-          drawSprite(ctx, art.props[0], q.x, q.y + 16, 0, false, 70);
+          drawSprite(ctx, art.furnishings[0], q.x, q.y + 10, 0, false, 64);
         } else furniture(ctx, project, p, "table");
         const q = project(p);
         text(String(i + 1), q.x, q.y + 3, "#684d35", 8);
@@ -768,7 +757,25 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
     return null;
   };
   return (
-    <div className="world">
+    <div
+      className="world"
+      style={
+        art
+          ? (() => {
+              const canvas = ref.current;
+              const scale = (canvas?.getBoundingClientRect().width || W) / W;
+              const width = canvas?.parentElement?.clientWidth || W;
+              const height = canvas?.parentElement?.clientHeight || H;
+              return {
+                backgroundImage: 'url("/art/garden.png")',
+                backgroundRepeat: "no-repeat",
+                backgroundSize: `${1160 * scale * camera.zoom}px ${773.33 * scale * camera.zoom}px`,
+                backgroundPosition: `${width / 2 + (-580 * camera.zoom + camera.x) * scale}px ${height / 2 + (-390 * camera.zoom + camera.y) * scale}px`,
+              };
+            })()
+          : undefined
+      }
+    >
       <canvas
         ref={ref}
         width={W}

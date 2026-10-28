@@ -1,14 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Game, Action, isQueued } from "./game";
-import {
-  pathLength,
-  Point,
-  tables,
-  along,
-  guestRoute,
-  cookSpot,
-  foodSpot,
-} from "./world";
+import { Point, tables, along, guestRoute, cookSpot, foodSpot } from "./world";
 import { artReady, Art, drawSprite } from "./art";
 import { furniture } from "./furniture";
 import { drawIdle } from "./idle";
@@ -344,7 +336,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       action?: "cook" | "order" | "clean" | "eat" | "choose",
       seated = false,
       target?: Point,
-      distance = 0,
     ) => {
       if (!art) return;
       const q = project(p);
@@ -356,12 +347,12 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       const back = dx < 0 || dy < 0;
       // NW is the authored rear view; mirror it for NE. Front views face SE.
       let flip = back ? dy < 0 : dy > 0;
-      // Whole-body atlas frames share a scale and foot anchor. Distance drives
-      // the walk cycle so changing staff speed also changes the cadence.
+      // Loop complete walking poses on the simulation clock. Route changes must
+      // not restart the cycle; pause and game speed still control playback.
       const frame = reduced
         ? 1
         : moving
-          ? Math.floor((distance / 1.6) * 4) % 4
+          ? Math.floor(game.time * 8 + id) % 4
           : action === "cook" ||
               action === "eat" ||
               (role === "waiter" && action)
@@ -543,16 +534,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
       if (s?.stage === "arriving") {
         const p = along(guestRoute(i), 1 - s.left / s.duration);
         add(p, () =>
-          person(
-            p,
-            s.id,
-            "guest",
-            true,
-            undefined,
-            false,
-            undefined,
-            pathLength(guestRoute(i)) * (1 - s.left / s.duration),
-          ),
+          person(p, s.id, "guest", true, undefined, false, undefined),
         );
       }
     });
@@ -561,18 +543,7 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
         [...guestRoute(d.seat)].reverse(),
         1 - d.left / d.duration,
       );
-      add(p, () =>
-        person(
-          p,
-          d.id,
-          "guest",
-          true,
-          undefined,
-          false,
-          undefined,
-          pathLength(guestRoute(d.seat)) * (1 - d.left / d.duration),
-        ),
-      );
+      add(p, () => person(p, d.id, "guest", true, undefined, false, undefined));
     });
     Object.entries(game.actors).forEach(([id, a], i) => {
       const cooking =
@@ -600,7 +571,6 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
               : undefined,
           false,
           target,
-          pathLength(a.path) * (1 - a.left / a.duration),
         );
         if (
           art &&

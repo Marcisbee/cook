@@ -45,7 +45,7 @@ Action frames use explicit silhouette bounds, shared row scales and body anchors
 
 Tables, dining chairs and service counters are drawn by `src/furniture.ts` using the same 2:1 world projection as navigation. Chair backs occupy the negative-X side, leaving the positive-X side facing the table. Counter tops and cabinet faces share the floor axes, including the second pickup counter.
 
-Walking plays complete character frames from the front and rear atlases. A four-frame cycle advances with route distance; each row shares a reference scale and foot anchor. Chef, waiter and all four diner identities use their own directional sprites. The procedural body rig has been removed. No body parts are replaced, stretched or skewed while walking. Existing pose sheets handle idle gestures, cooking, service and seated eating.
+Walking plays complete character frames from the front and rear atlases. A four-frame cycle repeats at eight frames per simulation second without restarting at route changes; each row shares a reference scale and foot anchor. Chef, waiter and all four diner identities use their own directional sprites. The procedural body rig has been removed. No body parts are replaced, stretched or skewed while walking. Existing pose sheets handle idle gestures, cooking, service and seated eating.
 
 ## Idle poses
 

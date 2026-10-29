@@ -327,6 +327,9 @@ export function update(game: Game, action: Action): Game {
       id === "owner"
         ? 3.5
         : 5 / (candidates.find((p) => p.id === id)?.speed || 1);
+    // Older saves may contain the retired pickup/placement dwell phases.
+    if (a.job?.kind === "serve" && ["collect", "work"].includes(a.phase))
+      a.left = 0;
     a.left = Math.max(0, a.left - dt);
     if (a.phase !== "work" && a.phase !== "collect")
       a.pos = along(a.path, 1 - a.left / a.duration);
@@ -342,12 +345,7 @@ export function update(game: Game, action: Action): Game {
       travel(a, id === "owner" ? chefSpot : pass, "home", speed);
       continue;
     }
-    if (a.phase === "pickup") {
-      a.phase = "collect";
-      a.duration = a.left = 0.45;
-      continue;
-    }
-    if (a.phase === "collect") {
+    if (a.phase === "pickup" || a.phase === "collect") {
       transition(s, "serving");
       travel(
         a,
@@ -357,7 +355,7 @@ export function update(game: Game, action: Action): Game {
       );
       continue;
     }
-    if (a.phase === "walk") {
+    if (a.phase === "walk" && j.kind !== "serve") {
       a.phase = "work";
       a.duration = a.left =
         j.kind === "clean" ? (g.upgrades.includes("washer") ? 1.2 : 2.4) : 0.8;

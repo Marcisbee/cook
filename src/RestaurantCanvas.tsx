@@ -633,22 +633,8 @@ export default function RestaurantCanvas({ game, dispatch }: Props) {
             direction = a.pos as Point & { dx?: number; dy?: number };
           const side =
             (direction.dx ?? 0) < 0 || (direction.dy ?? 0) > 0 ? -1 : 1;
-          let x = q.x + side * 13,
+          const x = q.x + side * 13,
             y = q.y - 33;
-          const progress = reduced ? 1 : 1 - a.left / a.duration;
-          if (collecting) {
-            const source = platePoint(a.job.seat);
-            x = source.x + (x - source.x) * progress;
-            y =
-              source.y +
-              5 +
-              (y - source.y - 5) * progress -
-              Math.sin(progress * Math.PI) * 5;
-          } else if (working) {
-            const destination = project(tables[a.job.seat]);
-            x += (destination.x - x) * progress;
-            y += (destination.y - 28 - y) * progress;
-          }
           drawSprite(ctx, art.props[10], x, y, 12);
         }
       });

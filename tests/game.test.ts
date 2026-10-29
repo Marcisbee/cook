@@ -191,16 +191,29 @@ test("each delivery is collected beside its own prepared dish", () => {
     g = update(g, { type: "serve", seat });
     g = until(
       g,
-      (g) =>
-        g.actors.luna.phase === "collect" && g.actors.luna.job?.seat === seat,
+      (g) => g.actors.luna.phase === "pickup" && g.actors.luna.left <= 0.05,
     );
-    const resumed = readSave(JSON.stringify(g));
-    assert.ok(resumed);
-    assert.equal(resumed.actors.luna.phase, "collect");
-    g = resumed;
-    g = until(g, (g) => g.seats[seat]?.stage === "serving");
+    g = update(g, { type: "tick", seconds: 0.05 });
+    assert.equal(
+      g.seats[seat]?.stage,
+      "serving",
+      "pickup completes on arrival",
+    );
     assert.equal(g.actors.luna.pos.x, seat < 4 ? 6 : 9);
     assert.equal(g.actors.luna.pos.y, seat < 4 ? seat + 1 : seat - 1);
+    const resumed = readSave(JSON.stringify(g));
+    assert.ok(resumed);
+    g = resumed;
+    g = until(
+      g,
+      (g) => g.actors.luna.phase === "walk" && g.actors.luna.left <= 0.05,
+    );
+    g = update(g, { type: "tick", seconds: 0.05 });
+    assert.equal(
+      g.seats[seat]?.stage,
+      "eating",
+      "placement completes on arrival",
+    );
     g = until(g, (g) => g.actors.luna.phase === "idle");
   }
 });
